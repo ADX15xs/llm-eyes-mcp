@@ -35,6 +35,10 @@ providers:
     timeout_seconds: 60
     max_tokens: 2048
 
+    # glm-4v-flash 4k (max_tokens: default 1024 / max 1024)
+    # glm-4.1v-thinking-flash 64k (max_tokens: default 32768 / max 32768)
+    # glm-4.6v-flash 128K (max_tokens: default 16384 / max 32768)
+
   # A local llama.cpp / llama-swap / Ollama backend. Loopback URLs need no key.
   local:
     enabled: false
