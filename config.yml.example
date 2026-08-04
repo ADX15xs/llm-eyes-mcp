@@ -1,0 +1,47 @@
+# llm-eyes-mcp configuration example.
+#
+# Copy this file to config.yml (next to the binary or in the working dir) and
+# edit it. Every ${VAR} is expanded from the process environment at load time,
+# so secrets stay out of the file. See .env.example for the variable names.
+
+# Root directory for the four cache tiers (L0 raw / L1 preprocessed / L2 VLM /
+# L3 geometry). Empty => ~/.llm-eyes-mcp on the current user's home.
+cache_dir: ""
+
+# Provider used when a tool does not name one. Leave empty to fall back to the
+# only enabled provider, or the first one alphabetically.
+default_provider: ""
+
+# Hard cap on VLM re-asks per measurement call (convergence control). 0 => 2.
+max_rounds: 2
+
+cache:
+  l1_max_bytes: 1073741824    # 1 GiB  - preprocessed image renditions
+  l1_ttl_hours: 24           # discard L1 entries older than this
+  l2_max_bytes: 104857600     # 100 MiB - VLM responses (the money-saving tier)
+  l2_ttl_hours: 168          # 7 days
+  l3_max_entries: 1000       # in-memory geometry results (per session)
+  sweep_idle_hours: 72       # drop L1 entries untouched this long at startup
+
+providers:
+  # GLM-4V-Flash via OpenAI-compatible Chat Completions.
+  glm:
+    enabled: true
+    type: openai_vision
+    base_url: https://open.bigmodel.cn/api/paas/v4
+    api_key: ${GLM_API_KEY}
+    model: glm-4v-flash
+    model_version: glm-4v-flash   # feeds the L2 cache key; bump on model swap
+    timeout_seconds: 60
+    max_tokens: 2048
+
+  # A local llama.cpp / llama-swap / Ollama backend. Loopback URLs need no key.
+  local:
+    enabled: false
+    type: openai_vision
+    base_url: http://127.0.0.1:8214/v1
+    api_key: ""                # loopback endpoints require no credential
+    model: qwen2.5-vl-7b-instruct
+    model_version: qwen2.5-vl-7b-instruct
+    timeout_seconds: 120
+    max_tokens: 2048

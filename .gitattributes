@@ -1,0 +1,21 @@
+# Normalise to LF everywhere. This project cross-compiles to linux and
+# darwin, and a CRLF Makefile or shell script breaks there.
+* text=auto eol=lf
+
+*.go      text eol=lf
+*.md      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.mod     text eol=lf
+*.sum     text eol=lf
+Makefile  text eol=lf
+.gitignore text eol=lf
+.env.example text eol=lf
+
+# Never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.db  binary

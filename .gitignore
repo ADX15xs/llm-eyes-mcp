@@ -1,0 +1,28 @@
+# Build output
+# NOTE: anchored with a leading slash on purpose. An unanchored
+# "llm-eyes-mcp" would also match the cmd/llm-eyes-mcp/ source directory.
+/bin/
+/llm-eyes-mcp
+/llm-eyes-mcp.exe
+/llm-eyes-mcp-*
+
+# User config & secrets (keep the .example templates tracked)
+/config.yml
+/.env
+
+# Agent working memory (local notes, not project source)
+.workbuddy/
+
+# Cache database files (if ever created inside the repo)
+*.db
+*.db-shm
+*.db-wal
+
+# OS / editor noise
+.DS_Store
+*.swp
+*~
+
+# Test artefacts
+*.out
+coverage.txt
