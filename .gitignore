@@ -10,9 +10,6 @@
 /config.yml
 /.env
 
-# Agent working memory (local notes, not project source)
-.workbuddy/
-
 # Cache database files (if ever created inside the repo)
 *.db
 *.db-shm
