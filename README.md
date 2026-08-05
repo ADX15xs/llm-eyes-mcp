@@ -29,11 +29,15 @@ Model Context Protocol（模型上下文协议），通过 stdin/stdout 上的 N
 需要 Go 1.22+。二进制以 `CGO_ENABLED=0` 编译，因此是一个单一的静态文件，可在任何平台干净构建。
 
 ```bash
-make build          # -> bin/llm-eyes-mcp  （Windows 上为 .exe）
-make test           # 运行完整测试套件
-make check          # 构建 + 校验配置与 provider，然后退出
-make all            # 交叉编译 windows / linux / darwin
+make build    # -> bin/llm-eyes-mcp（Windows 上为 bin/llm-eyes-mcp.exe，Makefile 按宿主 OS 显式加后缀）
+make test     # 运行完整测试套件
+make check    # 构建 + 校验配置与 provider，然后退出
+make all      # 交叉编译 windows / linux / darwin（产物带平台后缀，互不覆盖）
 ```
+
+> Windows 上不要把无扩展名文件（如从 Linux 产物解压出的 `llm-eyes-mcp`）与 `.exe` 并存：
+> `spawn("bin/llm-eyes-mcp")` 会优先命中 `.exe`，即使无扩展名文件更新也会静默运行旧 exe。
+> `make build` 已先清理这两类残留再产出 `.exe`。
 
 生成的二进制体积远小于 **20 MB**（仅依赖标准库 + `golang.org/x/image`
 + `gopkg.in/yaml.v3` + `modernc.org/sqlite`）。
@@ -49,7 +53,7 @@ make all            # 交叉编译 windows / linux / darwin
 4. 工作目录下的 `./config.yml`
 
 ```bash
-./bin/llm-eyes-mcp --check --config config.yml   # 部署前先校验
+./bin/llm-eyes-mcp --check --config config.yml   # 部署前先校验（Windows 上写 .exe）
 ```
 
 ## 运行
@@ -57,7 +61,7 @@ make all            # 交叉编译 windows / linux / darwin
 服务器是一个长时间运行的 stdio 进程。由你的 MCP 客户端启动：
 
 ```bash
-./bin/llm-eyes-mcp --config config.yml
+./bin/llm-eyes-mcp --config config.yml   # Windows 上写 ./bin/llm-eyes-mcp.exe
 ```
 
 ## 接入 MCP 客户端

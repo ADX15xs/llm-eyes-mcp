@@ -11,19 +11,27 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 
 .PHONY: all build windows linux darwin test clean run check
 
+# Detect the host OS: Windows/mingw -> "windows", everything else -> "unix".
+OS := $(if $(findstring Windows,$(OS) $(shell uname -s 2>/dev/null)),windows,unix)
+
 # Native build for the host platform.
+# Windows 上显式产出 .exe（spawn/PATHEXT 的规范写法）；先清理无扩展名残留，
+# 防止 bin/ 里混入陈旧产物后被 run/check 误执行。
 build:
-	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY) $(PKG)
+	rm -f bin/$(BINARY) bin/$(BINARY).exe
+	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY)$(if $(filter windows,$(OS)),.exe,) $(PKG)
 
 # Cross-compiled release artefacts.
 windows:
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY).exe $(PKG)
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY)-windows-amd64.exe $(PKG)
 
 linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY)-linux-amd64 $(PKG)
 
 darwin:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY)-darwin-arm64 $(PKG)
+
+BIN := bin/$(BINARY)$(if $(filter windows,$(OS)),.exe,)
 
 # All three release binaries.
 all: windows linux darwin
@@ -35,11 +43,11 @@ test:
 
 # Validate config + providers without starting the server.
 check: build
-	./bin/$(BINARY) --check --config config.yml
+	$(BIN) --check --config config.yml
 
 # Start the server against config.yml (assumes `make build` ran).
 run: build
-	./bin/$(BINARY) --config config.yml
+	$(BIN) --config config.yml
 
 clean:
 	rm -rf bin

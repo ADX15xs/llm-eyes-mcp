@@ -752,6 +752,7 @@ all:     clean build windows linux darwin
 | 客户端连上后无任何响应 | 用了 Content-Length 帧格式 | 改 NDJSON |
 | 协议随机崩溃 / JSON 解析错 | 有日志写进了 stdout | 全部改 stderr |
 | 客户端报「收到未知响应」 | 对通知回了响应 | 通知分支留空 |
+| Windows 上重测总跑旧版 | 无扩展名与 `.exe` 并存，spawn/PATHEXT 总优先 `.exe` | 只保留 `make build` 的产物，或手动删 `bin/llm-eyes-mcp` |
 | Agent 收到失败但无法重试 | 业务错误用了 JSON-RPC error | 改 `isError` + text |
 | 下游报 400 缺参数 | 可选参数为空直接透传 | 加配置默认值回退 |
 | `tools/list` 顺序每次不同 | 遍历了 Go map | 先 `sort.Strings` |
