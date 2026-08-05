@@ -58,17 +58,6 @@ func ImageContent(raw []byte, mimeType string) map[string]any {
 	}
 }
 
-// ResourceContent builds a resource reference entry.
-func ResourceContent(uri, mimeType string) map[string]any {
-	return map[string]any{
-		"type": "resource",
-		"resource": map[string]any{
-			"uri":      uri,
-			"mimeType": mimeType,
-		},
-	}
-}
-
 // Registry holds the tools exposed by the server. Writes happen during startup
 // only; reads afterwards are concurrent-safe because the map is never mutated
 // after Start.

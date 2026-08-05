@@ -87,6 +87,29 @@ type labelConf struct {
 	Confidence float64 `json:"confidence"`
 }
 
+// measureCacheEntry wraps a cached VLM reply with the dimensions of the image
+// the model actually saw (the preprocessed/resized one). Pixel coordinates in
+// the reply are relative to THAT image, so re-parsing a cached reply needs the
+// same dims. Storing them makes the entry self-describing: no coupling to the
+// preprocessor's current sizing, and a future change to HardMaxEdge cannot
+// silently mis-parse old entries.
+type measureCacheEntry struct {
+	Text string `json:"text"`
+	W    int    `json:"w"`
+	H    int    `json:"h"`
+}
+
+// decodeMeasureCache unwraps a cached entry. Returns nil for anything that is
+// not a valid envelope - including legacy raw-text entries, which simply get
+// discarded by the caller so the next call repopulates the slot.
+func decodeMeasureCache(blob []byte) *measureCacheEntry {
+	var e measureCacheEntry
+	if json.Unmarshal(blob, &e) == nil && e.Text != "" && e.W > 0 && e.H > 0 {
+		return &e
+	}
+	return nil
+}
+
 // Call runs the hard pipeline: load -> coordinates (cached) -> Go arithmetic.
 func (t *MeasureTool) Call(ctx context.Context, args map[string]any) *mcp.ToolResult {
 	source := imageSourceArg(args)
@@ -116,11 +139,18 @@ func (t *MeasureTool) Call(ctx context.Context, args map[string]any) *mcp.ToolRe
 	if err != nil {
 		return mcp.ErrorResult("Failed to load image: " + err.Error())
 	}
+
+	provider, err := t.d.providerFor(args)
+	if err != nil {
+		return mcp.ErrorResult(err.Error())
+	}
 	refresh := getBool(args, "refresh")
 
 	// L3: this exact measurement on this exact image is arithmetic we already
-	// performed. Serving it costs nothing and involves no network at all.
-	l3Key := cache.L3Key(img.ID, measureType, paramKey(map[string]string{
+	// performed. Serving it costs nothing and involves no network at all. The
+	// key carries the model version so a different provider gets its own entry
+	// instead of silently inheriting another provider's geometry.
+	l3Key := cache.L3Key(img.ID, measureType, provider.ModelVersion(), paramKey(map[string]string{
 		"labels": strings.Join(sortedCopy(labels), "|"),
 	}))
 	if !refresh && t.d.Cache != nil {
@@ -132,11 +162,6 @@ func (t *MeasureTool) Call(ctx context.Context, args map[string]any) *mcp.ToolRe
 				return renderMeasure(&cached)
 			}
 		}
-	}
-
-	provider, err := t.d.providerFor(args)
-	if err != nil {
-		return mcp.ErrorResult(err.Error())
 	}
 
 	dets, meta, err := t.d.detectObjects(ctx, img, provider, labels, measureType, refresh)
@@ -263,11 +288,15 @@ func (d *Deps) detectObjects(
 			// Forced re-analysis: drop the stale entry before re-querying.
 			d.Cache.L2.Delete(l2Key)
 		} else if blob, ok := d.Cache.L2.Get(l2Key); ok {
-			if dets, err := parseDetections(string(blob), img.Width, img.Height); err == nil {
-				matched, missing := matchLabels(labels, dets)
-				if len(missing) == 0 {
-					d.logf("L2 hit for %s/measure_image", img.ID[:8])
-					return matched, meta, nil
+			if e := decodeMeasureCache(blob); e != nil {
+				// Re-parse with the dims the model saw when the entry was
+				// written, not the current original dims.
+				if dets, err := parseDetections(e.Text, e.W, e.H); err == nil {
+					matched, missing := matchLabels(labels, dets)
+					if len(missing) == 0 {
+						d.logf("L2 hit for %s/measure_image", img.ID[:8])
+						return matched, meta, nil
+					}
 				}
 			}
 			// A cached reply that no longer parses is worthless; discard it.
@@ -292,7 +321,7 @@ func (d *Deps) detectObjects(
 		meta.rounds = round
 		prompt := measurePrompt(labels, measureType)
 		if round > 1 {
-			_, missing := lastMissing(labels, lastReply, img)
+			_, missing := lastMissing(labels, lastReply, proc.Width, proc.Height)
 			prompt = measureRetryPrompt(missing, lastReply)
 		}
 
@@ -311,7 +340,10 @@ func (d *Deps) detectObjects(
 		meta.model = resp.Model
 		lastReply = resp.Text
 
-		dets, err := parseDetections(resp.Text, img.Width, img.Height)
+		// Parse with the dims of the image the model actually SAW (the resized
+		// proc output), not the original: pixel coordinates are relative to
+		// what was on the model's screen.
+		dets, err := parseDetections(resp.Text, proc.Width, proc.Height)
 		if err != nil {
 			lastErr = err
 			d.logf("measure round %d/%d unparsable: %v", round, maxRounds, err)
@@ -320,8 +352,10 @@ func (d *Deps) detectObjects(
 		matched, missing := matchLabels(labels, dets)
 		if len(missing) == 0 {
 			if d.Cache != nil {
-				if err := d.Cache.L2.Put(l2Key, []byte(resp.Text)); err != nil {
-					d.logf("warning: write L2: %v", err)
+				if blob, err := json.Marshal(measureCacheEntry{Text: resp.Text, W: proc.Width, H: proc.Height}); err == nil {
+					if err := d.Cache.L2.Put(l2Key, blob); err != nil {
+						d.logf("warning: write L2: %v", err)
+					}
 				}
 			}
 			return matched, meta, nil
@@ -339,12 +373,12 @@ func (d *Deps) detectObjects(
 }
 
 // lastMissing re-derives which labels were absent from a previous reply, so the
-// retry prompt can name them explicitly.
-func lastMissing(labels []string, reply string, img *imageio.Image) ([]detection, []string) {
+// retry prompt can name them explicitly. w/h are the dims the model saw.
+func lastMissing(labels []string, reply string, w, h int) ([]detection, []string) {
 	if reply == "" {
 		return nil, labels
 	}
-	dets, err := parseDetections(reply, img.Width, img.Height)
+	dets, err := parseDetections(reply, w, h)
 	if err != nil {
 		return nil, labels
 	}

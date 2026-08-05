@@ -259,6 +259,14 @@ func TestNormaliseCoords(t *testing.T) {
 			want: [4]float64{0.1, 0.2, 0.5, 0.5},
 		},
 		{
+			// The model saw a 1500x1000 image (original was 3000x2000, resized
+			// by the hard pipeline). Its pixel coords are relative to the SEEN
+			// image, so callers must pass the seen dims - passing the original
+			// 3000x2000 would halve every coordinate.
+			name: "pixels relative to resized image", in: [4]float64{150, 100, 450, 300}, w: 1500, h: 1000,
+			want: [4]float64{0.1, 0.1, 0.3, 0.3},
+		},
+		{
 			name: "thousandths (Qwen-VL)", in: [4]float64{100, 200, 300, 400}, w: 50, h: 50,
 			want: [4]float64{0.1, 0.2, 0.3, 0.4},
 			// Too large for a 50x50 canvas, so it must be read as thousandths.

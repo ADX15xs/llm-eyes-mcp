@@ -41,10 +41,13 @@ func L2Key(md5, toolName, modelVersion, paramHash string) string {
 		strings.ToLower(md5), toolName, sanitize(modelVersion), paramHash, SchemaVersion)
 }
 
-// L3Key addresses a computed geometry value.
-func L3Key(md5, action string, params map[string]string) string {
-	return fmt.Sprintf("geo:%s_%s_%s_%s",
-		strings.ToLower(md5), action, sortedParams(params), SchemaVersion)
+// L3Key addresses a computed geometry value. It includes the model version
+// because the underlying coordinates can come from different providers; serving
+// one provider's geometry under a different provider's request would silently
+// ignore the caller's provider choice.
+func L3Key(md5, action, modelVersion string, params map[string]string) string {
+	return fmt.Sprintf("geo:%s_%s_%s_%s_%s",
+		strings.ToLower(md5), action, sanitize(modelVersion), sortedParams(params), SchemaVersion)
 }
 
 // ParamHash produces a short, order-independent digest of tool parameters.

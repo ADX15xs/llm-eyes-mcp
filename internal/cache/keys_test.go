@@ -75,11 +75,19 @@ func TestL3KeyOrderIndependent(t *testing.T) {
 	const md5 = "feedface00112233445566778899aabb"
 	p1 := map[string]string{"a": "1", "b": "2"}
 	p2 := map[string]string{"b": "2", "a": "1"}
-	if L3Key(md5, "distance", p1) != L3Key(md5, "distance", p2) {
+	if L3Key(md5, "distance", "v1", p1) != L3Key(md5, "distance", "v1", p2) {
 		t.Fatalf("param order must not change L3 key: %v vs %v", p1, p2)
 	}
-	if L3Key(md5, "distance", p1) == L3Key(md5, "area", p1) {
+	if L3Key(md5, "distance", "v1", p1) == L3Key(md5, "area", "v1", p1) {
 		t.Errorf("different action must yield a different L3 key")
+	}
+}
+
+func TestL3KeyModelVersionMatters(t *testing.T) {
+	const md5 = "feedface00112233445566778899aabb"
+	p := map[string]string{"labels": "a|b"}
+	if L3Key(md5, "distance", "v1", p) == L3Key(md5, "distance", "v2", p) {
+		t.Errorf("different model version must yield a different L3 key")
 	}
 }
 
@@ -112,7 +120,7 @@ func TestSanitizeMakesKeysSafe(t *testing.T) {
 		"glm-4.6v-flash": "glm-4.6v-flash",
 		"Qwen/VL 2.5":    "Qwen_VL_2.5",
 		"model:1/2":      "model_1_2",
-		"模型-测试":           "__-__",
+		"模型-测试":          "__-__",
 		"":               "unknown",
 	}
 	for in, want := range cases {

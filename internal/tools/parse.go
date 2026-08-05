@@ -69,8 +69,9 @@ func extractJSON(s string) string {
 
 // parseDetections decodes the VLM reply into normalised boxes.
 //
-// imgW/imgH are needed because some models ignore the "normalised" instruction
-// and answer in pixels or in thousandths; see normaliseCoords.
+// imgW/imgH are the dimensions of the image the model actually saw (the
+// preprocessed/resized one), used to disambiguate pixel vs thousandths vs
+// normalised coordinates; see normaliseCoords.
 func parseDetections(reply string, imgW, imgH int) ([]detection, error) {
 	doc := extractJSON(reply)
 	if doc == "" {
@@ -195,6 +196,11 @@ func decodeBox(raw json.RawMessage) ([4]float64, error) {
 // normaliseCoords converts whatever coordinate convention the model used into
 // [0,1].
 //
+// imgW/imgH MUST be the dimensions of the image the model actually saw (the
+// preprocessed/resized one), NOT the original: pixel coordinates are relative
+// to what was on the model's screen, so dividing them by the original size
+// would shrink every box.
+//
 // Three conventions appear in the wild despite an explicit instruction:
 //   - [0,1] floats            (what we asked for)
 //   - [0,1000] thousandths    (Qwen-VL family)
@@ -203,7 +209,10 @@ func decodeBox(raw json.RawMessage) ([4]float64, error) {
 // They are told apart by magnitude. When a value fits both the pixel range and
 // the thousandths range the pixel reading wins, since a model emitting pixels
 // for a small image is more common than thousandths that happen to land inside
-// the canvas.
+// the canvas. This leaves a residual ambiguity when the seen dimension is
+// >= ~1000px: thousandths (0..1000) then also fit the pixel range and get
+// misread as pixels. That case cannot be disambiguated from the values alone -
+// it would need an out-of-band coordinate-convention hint.
 func normaliseCoords(c [4]float64, imgW, imgH int) ([4]float64, error) {
 	for _, v := range c {
 		if math.IsNaN(v) || math.IsInf(v, 0) || v < -1e6 || v > 1e6 {
