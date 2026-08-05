@@ -15,10 +15,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 OS := $(if $(findstring Windows,$(OS) $(shell uname -s 2>/dev/null)),windows,unix)
 
 # Native build for the host platform.
-# Windows 上显式产出 .exe（spawn/PATHEXT 的规范写法）；先清理无扩展名残留，
-# 防止 bin/ 里混入陈旧产物后被 run/check 误执行。
 build:
-	rm -f bin/$(BINARY) bin/$(BINARY).exe
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY)$(if $(filter windows,$(OS)),.exe,) $(PKG)
 
 # Cross-compiled release artefacts.
