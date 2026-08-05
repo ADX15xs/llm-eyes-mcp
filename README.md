@@ -104,11 +104,6 @@ env     = { GLM_API_KEY = "${GLM_API_KEY}" }
 }
 ```
 
-### 通用 / 其他客户端
-
-任何支持 `"transport": "stdio"` 的客户端都能用相同结构接入：一个指向二进制的
-`command`，以及 `args: ["--config", "<绝对路径>"]`。
-
 ### 工具接受的图片输入
 
 每个工具都接受 `image_source`，可以是：
