@@ -65,6 +65,17 @@ make all            # 交叉编译 windows / linux / darwin
 MCP 客户端以子进程方式启动服务器。对 `command`（二进制）和 `--config` 参数都**使用绝对路径**——
 相对路径会基于客户端自身的工作目录解析，而那通常并不是你的目录。
 
+### Reasonix (`config.toml`, `reasonix.toml`)
+
+```toml
+[[plugins]]
+name    = "llm-eyes-mcp"
+type    = "stdio"
+command = "C:\\absolute\\path\\to\\llm-eyes-mcp.exe"
+args    = ["--config", "C:\\absolute\\path\\to\\config.yml"]
+env     = { GLM_API_KEY = "${GLM_API_KEY}" }
+```
+
 ### Claude Desktop（`claude_desktop_config.json`）
 
 ```json
