@@ -1,74 +1,71 @@
 # llm-eyes-mcp
 
-A zero-dependency, zero-CGO **MCP stdio server** that gives a text-only LLM a
-pair of eyes. It speaks the Model Context Protocol over NDJSON on stdin/stdout
-and exposes three focused tools:
+一个零依赖、零 CGO 的 **MCP stdio 服务器**，为纯文本 LLM 赋予"眼睛"。它基于
+Model Context Protocol（模型上下文协议），通过 stdin/stdout 上的 NDJSON 通信，
+对外暴露三个专注的工具：
 
-| Tool | Purpose | Pipeline |
-|------|---------|----------|
-| `measure_image` | Exact pixel geometry: distance, alignment, area. The VLM supplies **only coordinates**; all arithmetic is done deterministically in Go. | **hard** (lossless, CLAHE + unsharp) |
-| `describe_image` | Semantic understanding: what is in the picture, layout, style. | **soft** (aggressive JPEG downscale) |
-| `extract_text` | OCR: pull the literal text out of an image. | **soft** |
+| 工具 | 用途 | 预处理管线 |
+|------|------|-----------|
+| `measure_image` | 精确的像素几何：距离、对齐、面积。VLM 只提供**坐标**，所有运算都在 Go 中确定性完成。 | **hard**（无损，CLAHE + 锐化） |
+| `describe_image` | 语义理解：图里有什么、布局、风格。 | **soft**（激进的 JPEG 降采样） |
+| `extract_text` | OCR：提取图像中的原始文字。 | **soft** |
 
-Because coordinates come from the model but numbers come from code, measurement
-results are reproducible rather than estimated.
+因为坐标来自模型、而数值来自代码，测量结果可复现，而非靠估算得出。
 
-## Why
+## 设计初衷
 
-A vision-capable LLM is expensive and slow. Most of the time the same image is
-asked about repeatedly. `llm-eyes-mcp` sits between the agent and the vision
-backend and **caches aggressively** — original bytes (L0), preprocessed
-renditions (L1), VLM responses (L2), and computed geometry (L3) — so the second
-question about a picture is nearly free and costs zero API calls.
+带视觉的 LLM 往往又贵又慢，而同一张图常常会被反复提问。`llm-eyes-mcp` 就架在智能体与
+视觉后端之间，用一套多层缓存把开销压到最低——原始字节（L0）、预处理产物（L1）、VLM 响应（L2），
+以及计算出的几何结果（L3）。于是同一张图的第二次提问几乎零成本，也不会再产生任何 API 调用。
 
-## Build
+## 灵感来源
 
-Requires Go 1.22+. The binary is `CGO_ENABLED=0`, so it is a single static file
-and builds cleanly on any platform.
+`llm-eyes-mcp` 的灵感来自 [ds-vision-skill](https://github.com/Sorwcyra/ds-vision-skill)：
+把图像转成文本或 JSON、缓存结果，从而给纯文本 LLM 装上一双眼睛。本项目把这个想法
+重新落地为一个 MCP stdio 服务器，并在其基础上加入了确定性的测量能力（`measure_image`）。
+
+## 构建
+
+需要 Go 1.22+。二进制以 `CGO_ENABLED=0` 编译，因此是一个单一的静态文件，可在任何平台干净构建。
 
 ```bash
-make build          # -> bin/llm-eyes-mcp  (or .exe on Windows)
-make test           # run the full test suite
-make check          # build + validate config & providers, then exit
-make all            # cross-compile windows / linux / darwin
+make build          # -> bin/llm-eyes-mcp  （Windows 上为 .exe）
+make test           # 运行完整测试套件
+make check          # 构建 + 校验配置与 provider，然后退出
+make all            # 交叉编译 windows / linux / darwin
 ```
 
-The resulting binary is well under **20 MB** (pure stdlib + `golang.org/x/image`
-+ `gopkg.in/yaml.v3` + `modernc.org/sqlite`).
+生成的二进制体积远小于 **20 MB**（仅依赖标准库 + `golang.org/x/image`
++ `gopkg.in/yaml.v3` + `modernc.org/sqlite`）。
 
-## Configure
+## 配置
 
-Copy `config.yml.example` to `config.yml` and edit. Secrets are referenced as
-`${VAR}` and expanded from the environment (see `.env.example`). Config
-resolution order:
+将 `config.yml.example` 复制为 `config.yml` 并编辑。密钥以 `${VAR}` 形式引用，
+并从环境中展开（参见 `.env.example`）。配置解析顺序：
 
 1. `--config <path>`
 2. `$LLM_EYES_CONFIG`
-3. `config.yml` next to the executable
-4. `./config.yml` in the working directory
+3. 可执行文件旁的 `config.yml`
+4. 工作目录下的 `./config.yml`
 
 ```bash
-./bin/llm-eyes-mcp --check --config config.yml   # validate before deploying
+./bin/llm-eyes-mcp --check --config config.yml   # 部署前先校验
 ```
 
-## Run
+## 运行
 
-The server is a long-running stdio process. Your MCP client launches it:
+服务器是一个长时间运行的 stdio 进程。由你的 MCP 客户端启动：
 
 ```bash
 ./bin/llm-eyes-mcp --config config.yml
 ```
 
-> **stdout is reserved** for the JSON-RPC NDJSON stream. Every diagnostic goes to
-> stderr. Never `fmt.Println` to stdout from server code.
+## 接入 MCP 客户端
 
-## Connect an MCP client
+MCP 客户端以子进程方式启动服务器。对 `command`（二进制）和 `--config` 参数都**使用绝对路径**——
+相对路径会基于客户端自身的工作目录解析，而那通常并不是你的目录。
 
-MCP clients launch the server as a subprocess. **Use absolute paths** for both
-the `command` (the binary) and the `--config` argument — relative paths resolve
-against the client's own working directory, which is usually not yours.
-
-### Claude Desktop (`claude_desktop_config.json`)
+### Claude Desktop（`claude_desktop_config.json`）
 
 ```json
 {
@@ -81,7 +78,7 @@ against the client's own working directory, which is usually not yours.
 }
 ```
 
-### VS Code (`settings.json` → `mcp.servers`)
+### VS Code（`settings.json` → `mcp.servers`）
 
 ```json
 {
@@ -96,60 +93,57 @@ against the client's own working directory, which is usually not yours.
 }
 ```
 
-### Generic / other clients
+### 通用 / 其他客户端
 
-Any client that supports `"transport": "stdio"` works with the same shape: a
-`command` pointing at the binary and `args: ["--config", "<absolute path>"]`.
+任何支持 `"transport": "stdio"` 的客户端都能用相同结构接入：一个指向二进制的
+`command`，以及 `args: ["--config", "<绝对路径>"]`。
 
-### Image inputs the tools accept
+### 工具接受的图片输入
 
-Every tool takes `image_source`, which may be:
+每个工具都接受 `image_source`，可以是：
 
-- an `http(s)://` URL
-- an absolute file path or `file://` URI
-- a `data:` URI or raw base64
-- a **32-character `image_id`** returned by a previous call (cheapest — skips
-  re-upload and hits the cache, because the original bytes are archived in L0)
+- 一个 `http(s)://` URL
+- 绝对文件路径或 `file://` URI
+- 一个 `data:` URI 或原始 base64
+- 上一次调用返回的 **32 位 `image_id`**（最省——跳过重新上传并命中缓存，因为原始字节已归档在 L0）
 
-## How caching keeps it cheap
+## 缓存如何让它变便宜
 
-| Tier | Stores | Backed by | Invalidation |
-|------|--------|-----------|--------------|
-| L0 | original bytes | disk | never (content-addressed) |
-| L1 | preprocessed rendition per intent | disk (24 h, 1 GiB LRU) | TTL / idle / byte budget |
-| L2 | VLM response per tool+model+params | SQLite (7 d, 100 MiB) | TTL / byte budget / **credential change** |
-| L3 | computed geometry | in-memory LRU | end of session |
+| 层级 | 存储内容 | 后端 | 失效策略 |
+|------|----------|------|----------|
+| L0 | 原始字节 | 磁盘 | 永不（按内容寻址） |
+| L1 | 按意图预处理后的产物 | 磁盘（24 小时，1 GiB LRU） | TTL / 空闲 / 字节预算 |
+| L2 | 按 工具+模型+参数 的 VLM 响应 | SQLite（7 天，100 MiB） | TTL / 字节预算 / **凭据变更** |
+| L3 | 计算出的几何结果 | 内存 LRU | 会话结束 |
 
-If the API key or endpoint changes, L2 is purged automatically — answers from a
-different backend must never be reused.
+如果 API key 或端点发生变化，L2 会被自动清空——来自不同后端的答案绝不能被复用。
 
-## Project layout
+## 项目结构
 
 ```
-cmd/llm-eyes-mcp   entrypoint: flags, config, providers, cache, server wiring
+cmd/llm-eyes-mcp   入口：标志位、配置、provider、缓存、服务器装配
 internal/
-  config   config load / env-expand / validate / credential fingerprint
-  mcp      protocol layer: NDJSON framing, concurrent dispatch, tool registry
-  imageio  universal image loader (URL / file / data-uri / base64 / archive id)
-  imgproc  pure-Go preprocessing (CLAHE, unsharp, scaling)
-  vlm      vision backend adapter (OpenAI-compatible + mock)
-  tools    the three tools + parse/geometry/measure logic
-  cache    the four-tier cache
-  geometry deterministic geometry math
+  config   配置加载 / 环境变量展开 / 校验 / 凭据指纹
+  mcp      协议层：NDJSON 帧、并发分发、工具注册表
+  imageio  通用图像加载器（URL / 文件 / data-uri / base64 / 归档 id）
+  imgproc  纯 Go 预处理（CLAHE、锐化、缩放）
+  vlm      视觉后端适配器（OpenAI 兼容 + mock）
+  tools    三个工具 + 解析/几何/测量逻辑
+  cache    四层缓存
+  geometry 确定性几何运算
 ```
 
-## Testing
+## 测试
 
-Tests are table-driven and **never touch the network** — the VLM is injected via
-`vlm.NewMock`, and the cache uses `t.TempDir()`. Run everything with:
+测试采用表驱动，且**从不触及网络**——VLM 通过 `vlm.NewMock` 注入，缓存使用
+`t.TempDir()`。运行全部测试：
 
 ```bash
 make test
 ```
 
-Coverage includes the protocol framing (§7 of `docs/MCP_DEV_GUIDE.md`),
-coordinate parsing, the four cache tiers, and end-to-end tool runs that assert a
-repeat call is served from cache (the mock's `CallCount` stays at 1).
+覆盖范围包括协议帧（见 `docs/MCP_DEV_GUIDE.md` 第 7 节）、坐标解析、四个缓存层级，
+以及端到端的工具运行——断言重复调用会从缓存返回（mock 的 `CallCount` 保持为 1）。
 
 ## License
 
