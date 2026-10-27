@@ -21,7 +21,7 @@
 - **位置**：`internal/tools/compare.go` `compareBatchSize`（当前 =1）；`internal/tools/prompt.go` 单区域最小提示词
 - **原因（为什么妥协）**：uoma 网关对 vision 请求忽略所有 thinking 禁用参数（`enable_thinking` / `chat_template_kwargs.enable_thinking` / `thinking:{type:disabled}` / `response_format` json_schema 均实测无效），多区域定位提示词把整个 token 预算烧在推理上、content 返回 NULL（finish=length）；加大 `max_tokens` 至 8192 只产生更久的推理。batch=1 + 最小单区域提示词是唯一验证可靠的组合（直连 3/3 成功）。2026-10-27 探针与日志归档于 `docs/archive/`。
 - **偿还方式**：uoma 侧修复 thinking 透传后，调回 `compareBatchSize` 并重跑 E2E；或消费 `config.ProviderConfig.Extra`（现为死字段）透传后端参数，并把 batch size 做成 provider 级可配置。
-- **何时还**：待 uoma 修复（跟踪中，2026-10-28 记账）。
+- **何时还**：上游条件已于 2026-10-28 满足（网关关思考落地，8 区域批网关侧直测 IoU 0.91、5.8s 均值）；但 batch=1 是当前唯一经真值 E2E（8/8）验证的档位，调回需重跑匹配对 E2E 复验多区域信封回复质量，并权衡逐区域重试/缓存粒度的损失——建议与 provider 级可配置化一并做，另行排期。
 - **影响**：请求量与图片流量 ×N（N=区域数）；首跑延迟约 20s/区域串行（29 区域 ≈10 分钟，README 已注明预期）。附带残留风险：单区域可靠性是经验结论，机制上无 `finish_reason=length` 防护——极长 desc 仍可能推理超限后整体失败。
 
 ---
@@ -51,6 +51,12 @@
 - **`D:` 盘无法承载 L2 SQLite 缓存**（modernc.org/sqlite 报 `SQLITE_READONLY_DBMOVED` 776），默认 `cache_dir=~/.llm-eyes-mcp`（C 盘）不受影响，仅手动指向 D 盘踩雷。属运行时环境约束，非代码债。
 - **无 gcc，`go test -race` 不可用**（项目零 CGO，不影响交付；需则先装 MinGW）。
 
+### R-5. L1 命中路径丢失处理尺寸（已修复）
+
+- **位置**：`internal/tools/common.go` `preprocess` L1 命中分支
+- **状态**：✅ 已修复（2026-10-28 compare_design 验收发现）。L1 命中时仅凭缓存字节重建 Output，`Width/Height` 为 0 → `normaliseCoords` 的 `fitsPixels` 恒 false，像素坐标回复被强制按千分值解析（定位整体偏移，如 [95,318,190,344] → 乘 0.75/0.446）。修复：命中时 `image.DecodeConfig` 读图片头补回尺寸（`decodedDims`），回归测试 `TestPreprocessL1HitKeepsDimensions`。
+- **波及面**：`measure_image` 与 `compare_design` 共用该路径；此前未暴露是因为思考关闭后模型才开始大量回像素坐标（uoma 关思考后 GLM 混用归一化与像素两种口径，同一轮 8 区域内两种都有）。T-1 的启发式在 w>0 时「像素优先」策略对此图像（750×446，像素与千分值区间重叠）判定正确。
+
 ---
 
 ## 🔵 演进方向（未来功能，非债）
@@ -77,9 +83,11 @@
 ### D-2. compare_design 上线验证（依赖 uoma 网关稳定）
 
 - **来源**：2026-10-27/28 缓解修复会话（steel-all 审查后实施）
-- **结论**：两项验证后置，待 uoma 网关变更结束再执行——① 5 区域 E2E（`compare_e2e.mjs` + `frame7_small.json`），确认 isError=false 且 `vlm_rounds`=区域数；② 真值基准：在现有 750x446 截图上手工标注 3-5 个可见区域生成 spec，跑 compare_design 断言每区域 IoU ≥ 0.5（此前"精度提升"仅有"返回合法 JSON"的实证，无"框是对的"的实证）。
-- **依据**：uoma 正在改代码，网关行为不稳定期间跑网关依赖的验证，会把网关波动误判为代码回归。
-- **性质**：主动排期决策（等待依赖稳定），非隐性债。注意 Frame 7 对齐截图（750x1176）仍缺失；真值基准不依赖它——`probe_grounding_accuracy.mjs`（仓库根，合成图 + DOM 真值）已可用，且其 2026-10-28 直连上游的结果（`docs/archive/grounding_accuracy.json`）显示 8 区域 iouMean 0.90、7/8 达标——NULL 问题出在 uoma 网关层而非上游模型本身。
+- **状态**：✅ 已完成（2026-10-28，uoma 关思考落地后）。验收结果：
+  - 网关直连 ping：200 / finish=stop / `reasoning_tokens=0`（验收清单 #3 的直接证据）。
+  - 匹配对 E2E（`screenshots/yyhd_reward_section.png` 750×446 + `examples/yyhd_reward_spec.json`，后者由暗像素检测客观标注）：**8/8 ok，score=1.00**，IoU 0.62–0.93，中心距 ≤5.5px，色差 ≤2.7（阈值 24），文本 8/8 精确匹配，`isError=false`，`vlm_rounds=8`（每区域一轮收敛，无重试）。
+  - 首轮 E2E 曾 4/8，根因是 R-5（L1 命中丢尺寸）而非定位能力——修复后满分。Frame 7 全页截图（750×1176）仍缺，但匹配对验证已覆盖同等能力面，不再阻塞。
+- **性质**：已完成闭环；"精度提升"自此刻起有网关侧真值实证。
 
 ---
 
