@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "image": {
+    "width": 750,
+    "height": 446
+  },
+  "regions": [
+    {
+      "id": "voucher_label_1",
+      "desc": "TEXT 玩家1奖励标签",
+      "bbox": [72, 210, 205, 235],
+      "text": "Voucher(s)*1"
+    },
+    {
+      "id": "voucher_label_2",
+      "desc": "TEXT 玩家2奖励标签",
+      "bbox": [242, 210, 375, 235],
+      "text": "Voucher(s)*1"
+    },
+    {
+      "id": "voucher_label_4",
+      "desc": "TEXT 玩家10奖励标签（右侧高亮卡）",
+      "bbox": [530, 210, 662, 235],
+      "text": "Voucher(s)*1"
+    },
+    {
+      "id": "players_1",
+      "desc": "TEXT 玩家1人数",
+      "bbox": [95, 320, 188, 347],
+      "text": "1 Players"
+    },
+    {
+      "id": "players_2",
+      "desc": "TEXT 玩家2人数",
+      "bbox": [264, 320, 358, 347],
+      "text": "2 Players"
+    },
+    {
+      "id": "players_10",
+      "desc": "TEXT 玩家10人数",
+      "bbox": [546, 320, 651, 347],
+      "text": "10 Players"
+    },
+    {
+      "id": "btn_1",
+      "desc": "金色按钮 玩家1",
+      "bbox": [82, 350, 206, 408],
+      "color": "#E3C46A",
+      "text": "Not Reached"
+    },
+    {
+      "id": "btn_10",
+      "desc": "金色按钮 玩家10",
+      "bbox": [538, 350, 664, 408],
+      "color": "#E2C46B",
+      "text": "Not Reached"
+    }
+  ]
+}
