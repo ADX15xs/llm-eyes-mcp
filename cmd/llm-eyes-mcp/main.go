@@ -133,6 +133,7 @@ func run(args []string) int {
 	registry.Register(tools.NewMeasureTool(deps))
 	registry.Register(tools.NewDescribeTool(deps))
 	registry.Register(tools.NewExtractTool(deps))
+	registry.Register(tools.NewCompareTool(deps))
 
 	if checkOnly {
 		names := make([]string, 0, registry.Len())
