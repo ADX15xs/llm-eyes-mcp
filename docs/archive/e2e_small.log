@@ -1,0 +1,37 @@
+﻿node : [stderr] [llm-eyes-mcp] config loaded from config.yml
+所在位置 行:1 字符: 175
++ ... TEXITCODE"; node compare_e2e.mjs "screenshots/yyhd_reward_section.png ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([stderr] [llm-e...from config.yml:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[llm-eyes-mcp] providers ready: vision_glm, vision_qwen (default "vision_glm")
+
+[stderr] [llm-eyes-mcp] cache ready at C:\Users\10078\.llm-eyes-mcp | L1 removed=0 freed=0.0MB, L2 removed=0, credentia
+l purge=false
+
+[stderr] [llm-eyes-mcp] llm-eyes-mcp dev ready on stdio
+
+[stderr] [llm-eyes-mcp] L1 hit hard-e1500-q0-ctrue-strue-v1 (451880 bytes)
+
+[stderr] [llm-eyes-mcp] compare located 5 regions across 5 batches (<=1 each)
+
+=== RESULT ===
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": [
+      {
+        "text": "compare_design score=0.00 (0/5 ok)\n0/5 regions ok (0%). Issues: I37:40690;37:39735;37:39292(not found in screenshot); I37:40690;37:39736;37:39292(offset(iou=0.00,center=180.7px),color_delta=164.9(expected=#794633 actual=#DCB37E),text(expected=\"Reward Name\" got=\"Voucher(s)*1\")); I37:40690;37:39737;37:39292(offset(iou=0.00,center=179.6px),color_delta=165.7(expected=#794633 actual=#DCB37E),text(expected=\"Reward Name\" got=\"Voucher(s)*1\")); I37:40690;37:39738;37:39330(offset(iou=0.00,center=196.5px),color_delta=164.9(expected=#794633 actual=#DCB37E),text(expected=\"Reward Name\" got=\"Voucher(s)*1\")); I37:40690;37:39739;37:39292(offset(iou=0.00,center=180.2px),color_delta=164.9(expected=#794633 actual=#DCB37E),text(expected=\"Reward Name\" got=\"Voucher(s)*1\"))\n[image_id=29795261167dee7eec50227fb032b698 (750x446 px); spec_hash=7318f953; cache=L2; model=z-ai/glm-5.3-flash; vlm_rounds=5]",
+        "type": "text"
+      },
+      {
+        "text": "Structured result:\n{\n  \"summary\": \"0/5 regions ok (0%). Issues: I37:40690;37:39735;37:39292(not found in screenshot); I37:40690;37:39736;37:39292(offset(iou=0.00,center=180.7px),color_delta=164.9(expected=#794633 actual=#DCB37E),text(expected=\\\"Reward Name\\\" got=\\\"Voucher(s)*1\\\")); I37:40690;37:39737;37:39292(offset(iou=0.00,center=179.6px),color_delta=165.7(expected=#794633 actual=#DCB37E),text(expected=\\\"Reward Name\\\" got=\\\"Voucher(s)*1\\\")); I37:40690;37:39738;37:39330(offset(iou=0.00,center=196.5px),color_delta=164.9(expected=#794633 actual=#DCB37E),text(expected=\\\"Reward Name\\\" got=\\\"Voucher(s)*1\\\")); I37:40690;37:39739;37:39292(offset(iou=0.00,center=180.2px),color_delta=164.9(expected=#794633 actual=#DCB37E),text(expected=\\\"Reward Name\\\" got=\\\"Voucher(s)*1\\\"))\",\n  \"score\": 0,\n  \"regions_total\": 5,\n  \"regions_ok\": 0,\n  \"image_id\": \"29795261167dee7eec50227fb032b698\",\n  \"image_width\": 750,\n  \"image_height\": 446,\n  \"spec_hash\": \"7318f953be789746756d43beba790550d7131341ecb4e5f6218c71d60480fd01\",\n  \"regions\": [\n    {\n      \"id\": \"I37:40690;37:39735;37:39292\",\n      \"status\": \"missing\",\n      \"found\": false,\n      \"spec_bbox\": [\n        32,\n        42.0969387755102,\n        84,\n        85.52125850340136\n      ],\n      \"issues\": [\n        \"not found in screenshot\"\n      ],\n      \"expected_color\": \"#794633\",\n      \"expected_text\": \"Reward Name\"\n    },\n    {\n      \"id\": \"I37:40690;37:39736;37:39292\",\n      \"status\": \"offset+color_mismatch+text_mismatch\",\n      \"found\": true,\n      \"bbox\": [\n        75,\n        209.61999999999998,\n        210.00000000000003,\n        236.38000000000002\n      ],\n      \"spec_bbox\": [\n        31,\n        42.0969387755102,\n        83,\n        85.52125850340136\n      ],\n      \"center_dist_px\": 180.69862499748723,\n      \"issues\": [\n        \"offset(iou=0.00,center=180.7px)\",\n        \"color_delta=164.9(expected=#794633 actual=#DCB37E)\",\n        \"text(expected=\\\"Reward Name\\\" got=\\\"Voucher(s)*1\\\")\"\n      ],\n      \"expected_color\": \"#794633\",\n      \"actual_color\": \"#DCB37E\",\n      \"color_delta\": 164.90876231941922,\n      \"expected_text\": \"Reward Name\",\n      \"actual_text\": \"Voucher(s)*1\"\n    },\n    {\n      \"id\": \"I37:40690;37:39737;37:39292\",\n      \"status\": \"offset+color_mismatch+text_mismatch\",\n      \"found\": true,\n      \"bbox\": [\n        73.5,\n        208.728,\n        211.49999999999997,\n        235.934\n      ],\n      \"spec_bbox\": [\n        32,\n        42.0969387755102,\n        84,\n        85.52125850340136\n      ],\n      \"center_dist_px\": 179.63697617963322,\n      \"issues\": [\n        \"offset(iou=0.00,center=179.6px)\",\n        \"color_delta=165.7(expected=#794633 actual=#DCB37E)\",\n        \"text(expected=\\\"Reward Name\\\" got=\\\"Voucher(s)*1\\\")\"\n      ],\n      \"expected_color\": \"#794633\",\n      \"actual_color\": \"#DCB37E\",\n      \"color_delta\": 165.7247002204328,\n      \"expected_text\": \"Reward Name\",\n      \"actual_text\": \"Voucher(s)*1\"\n    },\n    {\n      \"id\": \"I37:40690;37:39738;37:39330\",\n      \"status\": \"offset+color_mismatch+text_mismatch\",\n      \"found\": true,\n      \"bbox\": [\n        75,\n        209.61999999999998,\n        210.00000000000003,\n        236.38000000000002\n      ],\n      \"spec_bbox\": [\n        12,\n        34.89115646258503,\n        64,\n        78.31547619047619\n      ],\n      \"center_dist_px\": 196.4894560467015,\n      \"issues\": [\n        \"offset(iou=0.00,center=196.5px)\",\n        \"color_delta=164.9(expected=#794633 actual=#DCB37E)\",\n        \"text(expected=\\\"Reward Name\\\" got=\\\"Voucher(s)*1\\\")\"\n      ],\n      \"expected_color\": \"#794633\",\n      \"actual_color\": \"#DCB37E\",\n      \"color_delta\": 164.90876231941922,\n      \"expected_text\": \"Reward Name\",\n      \"actual_text\": \"Voucher(s)*1\"\n    },\n    {\n      \"id\": \"I37:40690;37:39739;37:39292\",\n      \"status\": \"offset+color_mismatch+text_mismatch\",\n      \"found\": true,\n      \"bbox\": [\n        75,\n        209.61999999999998,\n        210.00000000000003,\n        236.38000000000002\n      ],\n      \"spec_bbox\": [\n        32,\n        42.0969387755102,\n        84,\n        85.52125850340136\n      ],\n      \"center_dist_px\": 180.227614632116,\n      \"issues\": [\n        \"offset(iou=0.00,center=180.2px)\",\n        \"color_delta=164.9(expected=#794633 actual=#DCB37E)\",\n        \"text(expected=\\\"Reward Name\\\" got=\\\"Voucher(s)*1\\\")\"\n      ],\n      \"expected_color\": \"#794633\",\n      \"actual_color\": \"#DCB37E\",\n      \"color_delta\": 164.90876231941922,\n      \"expected_text\": \"Reward Name\",\n      \"actual_text\": \"Voucher(s)*1\"\n    }\n  ],\n  \"model\": \"z-ai/glm-5.3-flash\",\n  \"cache_tier\": \"L2\",\n  \"vlm_rounds\": 5\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+Server exited with null

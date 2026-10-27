@@ -1,0 +1,35 @@
+﻿node : [stderr] [llm-eyes-mcp] config loaded from config.yml
+所在位置 行:1 字符: 59
++ ... ath "D:\github-clone\llm-eyes-mcp"; node compare_e2e.mjs 2>&1 | Tee-O ...
++                                         ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([stderr] [llm-e...from config.yml:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[llm-eyes-mcp] providers ready: vision_glm, vision_qwen (default "vision_glm")
+
+[stderr] [llm-eyes-mcp] cache ready at C:\Users\10078\.llm-eyes-mcp | L1 removed=0 freed=0.0MB, L2 removed=0, credentia
+l purge=false
+
+[stderr] [llm-eyes-mcp] llm-eyes-mcp dev ready on stdio
+
+[stderr] [llm-eyes-mcp] L1 hit hard-e1500-q0-ctrue-strue-v1 (451880 bytes)
+
+[stderr] [llm-eyes-mcp] compare batch 0 round 1/2 failed: vision_glm: model returned empty content
+
+[stderr] [llm-eyes-mcp] compare batch 0 round 2/2 failed: vision_glm: model returned empty content
+
+=== RESULT ===
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": [
+      {
+        "text": "Region location failed after 2 round(s): vision_glm: model returned empty content. Check that the screenshot actually contains the regions named in the spec.",
+        "type": "text"
+      }
+    ],
+    "isError": true
+  }
+}
+Server exited with null

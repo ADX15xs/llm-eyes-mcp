@@ -1,0 +1,3 @@
+﻿thinking.type=disabled         57568ms  finish=length reasoning=2048 regionsParsed=0 content=NULL
+thinking off + enable_thinking   38537ms  finish=length reasoning=2048 regionsParsed=0 content=NULL
+json_schema response_format    43914ms  finish=length reasoning=2048 regionsParsed=0 content=NULL

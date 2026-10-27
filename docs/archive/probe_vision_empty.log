@@ -1,0 +1,5 @@
+﻿simple vision prompt              9754ms  finish=stop completionTok=289 reasoningTok=217 content="Here is the text from the image:\n\nVoucher(s)*1\nVoucher(s)*1\nVouch... (parti
+8-region JSON locate             59250ms  finish=length completionTok=2048 reasoningTok=2048 content=NULL
+8-region + enable_thinking       45820ms  finish=length completionTok=2048 reasoningTok=2048 content=NULL
+8-region + chat_template         61233ms  finish=length completionTok=2048 reasoningTok=2048 content=NULL
+8-region + maxTokens 8192       180041ms  ERR(503): {"message":"all deployments failed: timeout AbortError: This operation was aborted","type":"invalid_request_error","param":null,"code":null}

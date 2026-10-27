@@ -1,0 +1,4 @@
+﻿1-region      18615ms  finish=stop tok=892 reasoning=847 regionsParsed=0 content=present
+2-region      56948ms  finish=length tok=2048 reasoning=2048 regionsParsed=0 content=NULL
+3-region      39718ms  finish=length tok=2048 reasoning=2048 regionsParsed=0 content=NULL
+4-region      14725ms  finish=stop tok=973 reasoning=800 regionsParsed=0 content=present
