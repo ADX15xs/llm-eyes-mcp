@@ -2,13 +2,14 @@
 
 一个零依赖、零 CGO 的 **MCP stdio 服务器**，为纯文本 LLM 赋予"眼睛"。它基于
 Model Context Protocol（模型上下文协议），通过 stdin/stdout 上的 NDJSON 通信，
-对外暴露三个专注的工具：
+对外暴露四个专注的工具：
 
 | 工具 | 用途 | 预处理管线 |
 |------|------|-----------|
 | `measure_image` | 精确的像素几何：距离、对齐、面积。VLM 只提供**坐标**，所有运算都在 Go 中确定性完成。 | **hard**（无损，CLAHE + 锐化） |
 | `describe_image` | 语义理解：图里有什么、布局、风格。 | **soft**（激进的 JPEG 降采样） |
 | `extract_text` | OCR：提取图像中的原始文字。 | **soft** |
+| `compare_design` | 设计还原校验：结构化设计 spec + 组件截图 → 逐区域 IoU / 色差 / 文本比对报告。VLM 只做定位与转录，比对数值全部由 Go 计算。 | **hard** |
 
 因为坐标来自模型、而数值来自代码，测量结果可复现，而非靠估算得出。
 
@@ -23,6 +24,11 @@ Model Context Protocol（模型上下文协议），通过 stdin/stdout 上的 N
 `llm-eyes-mcp` 的灵感来自 [ds-vision-skill](https://github.com/Sorwcyra/ds-vision-skill)：
 把图像转成文本或 JSON、缓存结果，从而给纯文本 LLM 装上一双眼睛。本项目把这个想法
 重新落地为一个 MCP stdio 服务器，并在其基础上加入了确定性的测量能力（`measure_image`）。
+
+更深层的设计动机来自 DeepSeek 多模态论文中提出的"视觉原语"（visual primitives）思路：
+让模型输出图上的"指"——坐标与基元——把"指代"交给确定性计算去完成，从而跨越自然语言
+描述与像素位置之间的"指代鸿沟"。本项目在工程中将其简化为——VLM 只负责产出坐标，所有
+几何数值由 Go 在本地确定性地计算（`measure_image` 的可复现性即源于此）。
 
 ## 构建
 
@@ -117,6 +123,19 @@ env     = { GLM_API_KEY = "${GLM_API_KEY}" }
 - 一个 `data:` URI 或原始 base64
 - 上一次调用返回的 **32 位 `image_id`**（最省——跳过重新上传并命中缓存，因为原始字节已归档在 L0）
 
+## compare_design：设计还原校验
+
+`compare_design` 面向 D2C 设计还原场景：给一份结构化设计 spec（JSON 文件路径或内联对象，
+格式契约见 `docs/spec-schema.md`，参考转换脚本 `examples/sloth_to_spec.py`）和一张
+**单组件裁剪**截图，它会逐区域返回还原保真报告——位置 IoU、色差（ΔRGB）、文本是否一致，
+以及总分与问题清单。
+
+- spec 由 Agent 侧的 D2C 导出转换器产出；llm-eyes 不绑定任何 D2C 工具的私有格式。
+- VLM 只负责"定位区域 + 转录区域内文字"，所有比对数值由 Go 确定性计算。
+- **延迟预期**：当前每个区域一次 VLM 调用（约 20s/次，串行执行）。29 个区域首跑约
+  10 分钟；相同图 + spec 的重复调用命中缓存瞬时返回，部分失败后的重跑只重付失败的区域。
+  对大 spec 请相应调高 MCP 客户端的工具调用超时。
+
 ## 缓存如何让它变便宜
 
 | 层级 | 存储内容 | 后端 | 失效策略 |
@@ -138,7 +157,7 @@ internal/
   imageio  通用图像加载器（URL / 文件 / data-uri / base64 / 归档 id）
   imgproc  纯 Go 预处理（CLAHE、锐化、缩放）
   vlm      视觉后端适配器（OpenAI 兼容 + mock）
-  tools    三个工具 + 解析/几何/测量逻辑
+  tools    四个工具 + 解析/几何/测量/比对逻辑
   cache    四层缓存
   geometry 确定性几何运算
 ```
@@ -153,7 +172,12 @@ make test
 ```
 
 覆盖范围包括协议帧（见 `docs/MCP_DEV_GUIDE.md` 第 7 节）、坐标解析、四个缓存层级，
-以及端到端的工具运行——断言重复调用会从缓存返回（mock 的 `CallCount` 保持为 1）。
+以及端到端的工具运行——断言重复调用会从缓存返回（mock 的 `CallCount` 不再增长）。
+
+## ⭐ 支持与贡献
+
+如果 `llm-eyes-mcp` 给你的 AI 装上了眼睛，欢迎点个 Star。
+核心已稳定，Issue 与 PR 都欢迎——无论是接入新的视觉后端，还是补充文档与示例。
 
 ## License
 
