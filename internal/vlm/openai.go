@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,6 +30,14 @@ const (
 // maxErrorBody bounds how much of a downstream error page reaches the agent's
 // context. Some gateways return tens of KB of HTML on failure.
 const maxErrorBody = 200
+
+const (
+	maxAttempts = 3
+	// A stdio MCP session blocks on us, so waits stay short: exponential from
+	// 500ms and never longer than maxRetryWait even when the server asks for more.
+	baseRetryWait = 500 * time.Millisecond
+	maxRetryWait  = 30 * time.Second
+)
 
 // openAIVision talks to any OpenAI-compatible /chat/completions endpoint that
 // accepts image_url content parts. That covers GLM-4.6V-Flash, Qwen-VL on
@@ -101,12 +110,12 @@ func (o *openAIVision) Complete(ctx context.Context, req Request) (*Response, er
 	}
 
 	var lastErr error
-	for attempt := 0; attempt < 3; attempt++ {
+	for attempt := 0; attempt < maxAttempts; attempt++ {
 		if attempt > 0 {
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
-			case <-time.After(time.Duration(attempt) * 500 * time.Millisecond):
+			case <-time.After(retryDelay(lastErr, attempt)):
 			}
 		}
 		resp, err := o.doOnce(ctx, body)
@@ -179,19 +188,19 @@ func (o *openAIVision) doOnce(ctx context.Context, body []byte) (*Response, erro
 
 	resp, err := o.client.Do(httpReq)
 	if err != nil {
-		return nil, retryable{fmt.Errorf("call %s: %w", o.name, err)}
+		return nil, retryable{error: fmt.Errorf("call %s: %w", o.name, err)}
 	}
 	defer resp.Body.Close()
 	raw, readErr := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
 	if readErr != nil {
-		return nil, retryable{fmt.Errorf("read %s response: %w", o.name, readErr)}
+		return nil, retryable{error: fmt.Errorf("read %s response: %w", o.name, readErr)}
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		e := fmt.Errorf("%s HTTP %d: %s", o.name, resp.StatusCode, truncateRunes(string(raw), maxErrorBody))
 		// 4xx will not fix itself on retry; 429 and 5xx might.
 		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
-			return nil, retryable{e}
+			return nil, retryable{error: e, after: parseRetryAfter(resp.Header.Get("Retry-After"))}
 		}
 		return nil, e
 	}
@@ -291,12 +300,56 @@ func decodeContent(raw json.RawMessage) (string, error) {
 	return b.String(), nil
 }
 
-// retryable marks transient failures.
-type retryable struct{ error }
+// retryable marks transient failures. after carries the server's Retry-After
+// hint when it supplied one.
+type retryable struct {
+	error
+	after time.Duration
+}
 
 func isRetryable(err error) bool {
 	_, ok := err.(retryable)
 	return ok
+}
+
+// retryDelay honours a server's Retry-After hint, then falls back to
+// exponential backoff: 500ms, 1s, 2s...
+func retryDelay(err error, attempt int) time.Duration {
+	if r, ok := err.(retryable); ok && r.after > 0 {
+		if r.after > maxRetryWait {
+			return maxRetryWait
+		}
+		return r.after
+	}
+	d := baseRetryWait
+	for i := 1; i < attempt && d < maxRetryWait; i++ {
+		d *= 2
+	}
+	if d > maxRetryWait {
+		return maxRetryWait
+	}
+	return d
+}
+
+// parseRetryAfter accepts the delta-seconds and HTTP-date forms of the header.
+// Unparsable values yield 0 so the exponential fallback applies.
+func parseRetryAfter(v string) time.Duration {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return 0
+	}
+	if secs, err := strconv.Atoi(v); err == nil {
+		if secs <= 0 {
+			return 0
+		}
+		return time.Duration(secs) * time.Second
+	}
+	if t, err := http.ParseTime(v); err == nil {
+		if d := time.Until(t); d > 0 {
+			return d
+		}
+	}
+	return 0
 }
 
 // truncateRunes shortens s to max runes. Rune-based so Chinese error messages

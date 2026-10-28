@@ -6,8 +6,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/xiaos/llm-eyes-mcp/internal/config"
 )
@@ -191,7 +193,7 @@ func TestParseChatCompletionEmptyContent(t *testing.T) {
 }
 
 func TestIsRetryable(t *testing.T) {
-	if !isRetryable(retryable{errors.New("transient")}) {
+	if !isRetryable(retryable{error: errors.New("transient")}) {
 		t.Errorf("retryable wrapper must be recognised")
 	}
 	if isRetryable(errors.New("permanent")) {
@@ -274,5 +276,118 @@ func TestDoOnceTruncatesLargeErrorBody(t *testing.T) {
 	}
 	if len(err.Error()) > maxErrorBody+60 {
 		t.Errorf("error body not truncated: len=%d", len(err.Error()))
+	}
+}
+
+func TestParseRetryAfter(t *testing.T) {
+	cases := []struct {
+		name string
+		head string
+		want time.Duration
+	}{
+		{"delta seconds", "7", 7 * time.Second},
+		{"zero", "0", 0},
+		{"negative", "-3", 0},
+		{"past http date", time.Now().UTC().Add(-time.Hour).Format(http.TimeFormat), 0},
+		{"garbage", "soon", 0},
+		{"empty", "", 0},
+	}
+	for _, c := range cases {
+		if got := parseRetryAfter(c.head); got != c.want {
+			t.Errorf("%s: parseRetryAfter(%q) = %v, want %v", c.name, c.head, got, c.want)
+		}
+	}
+	future := time.Now().UTC().Add(3 * time.Second).Format(http.TimeFormat)
+	if got := parseRetryAfter(future); got <= 0 || got > 6*time.Second {
+		t.Errorf("future http date: got %v, want (0, 6s]", got)
+	}
+}
+
+func TestRetryDelayPrefersRetryAfter(t *testing.T) {
+	err := retryable{error: errors.New("429"), after: 4 * time.Second}
+	if got := retryDelay(err, 1); got != 4*time.Second {
+		t.Errorf("Retry-After must override backoff: %v", got)
+	}
+	capped := retryable{error: errors.New("429"), after: maxRetryWait + time.Minute}
+	if got := retryDelay(capped, 1); got != maxRetryWait {
+		t.Errorf("Retry-After must be capped at maxRetryWait: %v", got)
+	}
+}
+
+func TestRetryDelayExponentialFallback(t *testing.T) {
+	got := []time.Duration{
+		retryDelay(retryable{error: errors.New("500")}, 1),
+		retryDelay(errors.New("transport"), 2),
+		retryDelay(retryable{error: errors.New("500"), after: 0}, 3),
+	}
+	want := []time.Duration{500 * time.Millisecond, time.Second, 2 * time.Second}
+	for i, g := range got {
+		if g != want[i] {
+			t.Errorf("attempt %d: retryDelay = %v, want %v", i+1, g, want[i])
+		}
+	}
+	if d := retryDelay(retryable{error: errors.New("500")}, 40); d != maxRetryWait {
+		t.Errorf("deep attempt must saturate at maxRetryWait, got %v", d)
+	}
+}
+
+func TestCompleteHonoursRetryAfterOn429(t *testing.T) {
+	const hint = 1 // seconds; must actually be waited out
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		if hits == 1 {
+			w.Header().Set("Retry-After", strconv.Itoa(hint))
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		_, _ = io.WriteString(w, `{"choices":[{"message":{"content":"ok"}}]}`)
+	}))
+	defer srv.Close()
+
+	p, err := newOpenAIVision("test", &config.ProviderConfig{
+		Type: TypeOpenAIVision, BaseURL: srv.URL, Model: "m",
+	})
+	if err != nil {
+		t.Fatalf("newOpenAIVision: %v", err)
+	}
+	o := p.(*openAIVision)
+	o.client = srv.Client()
+
+	start := time.Now()
+	resp, err := o.Complete(context.Background(), Request{Image: []byte("x"), ImageMIME: "image/png", Prompt: "q"})
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatalf("429 with Retry-After must be retried: %v", err)
+	}
+	if resp.Text != "ok" {
+		t.Errorf("body = %q, want ok", resp.Text)
+	}
+	if hits != 2 {
+		t.Errorf("hits = %d, want 2", hits)
+	}
+	if elapsed < time.Duration(hint)*time.Second {
+		t.Errorf("Retry-After of %ds not honoured, waited only %v", hint, elapsed)
+	}
+}
+
+func TestCompleteGivesUpAfterMaxAttemptsOn429(t *testing.T) {
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	p, _ := newOpenAIVision("test", &config.ProviderConfig{
+		Type: TypeOpenAIVision, BaseURL: srv.URL, Model: "m",
+	})
+	o := p.(*openAIVision)
+	o.client = srv.Client()
+	if _, err := o.Complete(context.Background(), Request{Image: []byte("x"), Prompt: "q"}); err == nil {
+		t.Fatalf("persistent 429 must exhaust retries")
+	}
+	if hits != maxAttempts {
+		t.Errorf("hits = %d, want %d", hits, maxAttempts)
 	}
 }
