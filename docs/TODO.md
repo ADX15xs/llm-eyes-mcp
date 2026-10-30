@@ -18,7 +18,7 @@
 
 ### T-2. compare_design 单区域批处理（上游 thinking 参数失效的绕行）
 
-- **位置**：`internal/tools/compare.go` `compareBatchSize`（当前 =1）；`internal/tools/prompt.go` 单区域最小提示词
+- **位置**：`internal/tools/compare_locate.go` `compareBatchSize`（当前 =1）；`internal/tools/prompt.go` 单区域最小提示词
 - **原因（为什么妥协）**：uoma 网关对 vision 请求忽略所有 thinking 禁用参数（`enable_thinking` / `chat_template_kwargs.enable_thinking` / `thinking:{type:disabled}` / `response_format` json_schema 均实测无效），多区域定位提示词把整个 token 预算烧在推理上、content 返回 NULL（finish=length）；加大 `max_tokens` 至 8192 只产生更久的推理。batch=1 + 最小单区域提示词是唯一验证可靠的组合（直连 3/3 成功）。2026-10-27 探针与日志归档于 `docs/archive/`。
 - **偿还方式**：uoma 侧修复 thinking 透传后，调回 `compareBatchSize` 并重跑 E2E；或消费 `config.ProviderConfig.Extra`（现为死字段）透传后端参数，并把 batch size 做成 provider 级可配置。
 - **何时还**：上游条件已于 2026-10-28 满足（网关关思考落地，8 区域批网关侧直测 IoU 0.91、5.8s 均值）；但 batch=1 是当前唯一经真值 E2E（8/8）验证的档位，调回需重跑匹配对 E2E 复验多区域信封回复质量，并权衡逐区域重试/缓存粒度的损失——建议与 provider 级可配置化一并做，另行排期。
