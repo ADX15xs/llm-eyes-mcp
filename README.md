@@ -126,7 +126,7 @@ env     = { GLM_API_KEY = "${GLM_API_KEY}" }
 ## compare_design：设计还原校验
 
 `compare_design` 面向 D2C 设计还原场景：给一份结构化设计 spec（JSON 文件路径或内联对象，
-格式契约见 `docs/spec-schema.md`，参考转换脚本 `examples/sloth_to_spec.py`）和一张
+格式契约见 `docs/spec-schema.md`）和一张
 **单组件裁剪**截图，它会逐区域返回还原保真报告——位置 IoU、色差（ΔRGB）、文本是否一致，
 以及总分与问题清单。
 

@@ -45,7 +45,7 @@ func (t *CompareTool) Name() string { return "compare_design" }
 
 func (t *CompareTool) Description() string {
 	return "Compare a structured design spec against an actual screenshot and report per-region restore fidelity. " +
-		"The spec is a JSON file or inline object produced by a D2C exporter converter (reference script at examples/sloth_to_spec.py). " +
+		"The spec is a JSON file or inline object produced by a D2C exporter converter on the agent side. " +
 		"The VLM only locates regions and transcribes text inside them; Go computes colour delta, IoU, and text equality. " +
 		"Use this AFTER implementing a design component from a D2C export, on a CROPPED screenshot of ONE component " +
 		"together with the spec slice for that component. " +

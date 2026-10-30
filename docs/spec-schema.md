@@ -1,15 +1,15 @@
 # compare_design 规格文件契约（spec schema v1）
 
 `compare_design` 把一份机器可读的设计规格与一张实现截图对比，输出逐区域还原度报告。
-规格文件由 D2C 导出转换脚本生成（参考实现：`examples/sloth_to_spec.py`，把 Sloth 的
-raw-tree JSON 转成此格式）。llm-eyes-mcp **不感知**任何 D2C 工具的私有格式——它只认
-本文件定义的通用 schema。
+规格文件由 Agent 侧的 D2C 导出转换器生成，把 D2C 工具导出的 raw-tree 数据转成
+本契约定义的格式（转换器随宿主项目的语言实现）。llm-eyes-mcp **不感知**任何 D2C
+工具的私有格式——它只认本文件定义的通用 schema。
 
 ## 分工（设计定版 2026-10-27）
 
 ```text
 D2C 导出 (sloth raw-tree JSON)
-   │  转换脚本（Agent 侧，node/python）
+   │  转换器（Agent 侧，宿主项目语言）
    ▼
 spec JSON ──────────────┐
                         ▼
