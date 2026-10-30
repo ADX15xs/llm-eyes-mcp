@@ -73,8 +73,8 @@ func (t *CompareTool) InputSchema() map[string]any {
 				"description": "The screenshot to compare. Accepts an http(s) URL, an absolute file path, a file:// URI, a data URI, raw base64, or a previously returned image_id.",
 			},
 			"spec": map[string]any{
-				"type":        "string",
-				"description": "Path to the spec JSON file, or the spec JSON object itself inline. See docs/spec-schema.md for the format.",
+				"type":        []any{"string", "object"},
+				"description": "Path to the spec JSON file, the inline JSON string, or the spec JSON object itself. See docs/spec-schema.md for the format.",
 			},
 			"refresh": map[string]any{
 				"type":        "boolean",
@@ -121,12 +121,24 @@ func (t *CompareTool) Call(ctx context.Context, args map[string]any) *mcp.ToolRe
 		return mcp.ErrorResult("image_source is required: pass a URL, file path, data URI, base64 string, or a previously returned image_id.")
 	}
 	specSrc := strings.TrimSpace(getString(args, "spec"))
-	if specSrc == "" {
-		return mcp.ErrorResult("spec is required: pass a JSON file path or an inline JSON object.")
+	var spec *compareSpec
+	var specHash string
+	var err error
+	switch v := args["spec"].(type) {
+	case nil:
+		return mcp.ErrorResult("spec is required: pass a JSON file path, an inline JSON string, or an inline object.")
+	case map[string]any:
+		data, mErr := json.Marshal(v)
+		if mErr != nil {
+			return mcp.ErrorResult("failed to encode spec object: " + mErr.Error())
+		}
+		spec, specHash, err = parseSpec(data)
+	default:
+		if specSrc == "" {
+			return mcp.ErrorResult("spec is required: pass a JSON file path, an inline JSON string, or an inline object.")
+		}
+		spec, specHash, err = loadSpec(specSrc)
 	}
-
-	// Read / parse spec.
-	spec, specHash, err := loadSpec(specSrc)
 	if err != nil {
 		return mcp.ErrorResult("failed to parse spec: " + err.Error())
 	}
@@ -204,6 +216,10 @@ func loadSpec(src string) (*compareSpec, string, error) {
 		// Fallback: treat src as inline JSON.
 		data = []byte(src)
 	}
+	return parseSpec(data)
+}
+
+func parseSpec(data []byte) (*compareSpec, string, error) {
 	var spec compareSpec
 	if err := json.Unmarshal(data, &spec); err != nil {
 		return nil, "", fmt.Errorf("spec parse failed: %w", err)

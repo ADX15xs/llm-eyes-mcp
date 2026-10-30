@@ -355,6 +355,24 @@ func TestCompareDesignInlineSpecJSON(t *testing.T) {
 	}
 }
 
+func TestCompareDesignInlineSpecObject(t *testing.T) {
+	deps, _ := newCompareDeps(t, compareOKMock("qwen"))
+	tool := NewCompareTool(deps)
+	p := writeCompareTestImage(t, 375, 812)
+
+	specObj := map[string]any{
+		"version": 1,
+		"regions": []any{
+			map[string]any{"id": "btn", "bbox": []any{37, 650, 338, 772}},
+			map[string]any{"id": "title", "bbox": []any{37, 81, 338, 162}},
+		},
+	}
+	res := call(t, tool, map[string]any{"image_source": p, "spec": specObj})
+	if res.IsError {
+		t.Fatalf("inline spec object should work: %s", resultText(res))
+	}
+}
+
 func TestCompareDesignInvalidSpecRejected(t *testing.T) {
 	deps, _ := newCompareDeps(t, vlm.NewMock("qwen", ""))
 	tool := NewCompareTool(deps)
