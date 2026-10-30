@@ -74,6 +74,5 @@ VLM 只负责「找到区域 + 逐字转录其中的文字」，其余全部由 
 
 ## 缓存与重跑
 
-- **L2**：VLM 定位回复，键 = 原图 MD5 + spec 内容 SHA256 + model_version
-- **L3**：最终报告，同键族。同图同 spec 重复对比零 VLM 成本
+- **L2**：VLM 定位回复与最终报告，键 = 原图 MD5 + spec 内容 SHA256 + model_version。同图同 spec 重复对比零 VLM 成本
 - `refresh: true` 丢弃缓存强制重跑；换模型（`provider` 参数）天然隔离缓存
