@@ -93,8 +93,8 @@ func (t *CompareTool) InputSchema() map[string]any {
 // compareSpec mirrors docs/spec-schema.md. Kept small and flat to avoid
 // coupling to any single D2C tool.
 type compareSpec struct {
-	Version int            `json:"version"`
-	Image   *specImage     `json:"image,omitempty"`
+	Version int             `json:"version"`
+	Image   *specImage      `json:"image,omitempty"`
 	Regions []compareRegion `json:"regions"`
 }
 
@@ -104,11 +104,11 @@ type specImage struct {
 }
 
 type compareRegion struct {
-	ID    string   `json:"id"`
-	Desc  string   `json:"desc,omitempty"`
+	ID    string    `json:"id"`
+	Desc  string    `json:"desc,omitempty"`
 	BBox  []float64 `json:"bbox,omitempty"`
-	Color string   `json:"color,omitempty"`
-	Text  string   `json:"text,omitempty"`
+	Color string    `json:"color,omitempty"`
+	Text  string    `json:"text,omitempty"`
 }
 
 func (r compareRegion) hasExpectation() bool {
@@ -252,9 +252,9 @@ var hexColorRe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 // ---------------------------------------------------------------------------
 
 type regionDetection struct {
-	ID       string
-	Box      geometry.Box // normalised [0,1]
-	Text     string
+	ID         string
+	Box        geometry.Box // normalised [0,1]
+	Text       string
 	Confidence float64
 	Found      bool
 }
@@ -421,16 +421,16 @@ func (d *Deps) locateRegionBatch(
 // ---------------------------------------------------------------------------
 
 type rawRegion struct {
-	ID         string          `json:"id"`
-	Label      string          `json:"label"`
-	Name       string          `json:"name"`
-	BBox       json.RawMessage `json:"bbox"`
-	Box        json.RawMessage `json:"box"`
+	ID          string          `json:"id"`
+	Label       string          `json:"label"`
+	Name        string          `json:"name"`
+	BBox        json.RawMessage `json:"bbox"`
+	Box         json.RawMessage `json:"box"`
 	BoundingBox json.RawMessage `json:"bounding_box"`
-	Bbox2D     json.RawMessage `json:"bbox_2d"`
-	Text       string          `json:"text"`
-	Confidence *float64        `json:"confidence"`
-	Score      *float64        `json:"score"`
+	Bbox2D      json.RawMessage `json:"bbox_2d"`
+	Text        string          `json:"text"`
+	Confidence  *float64        `json:"confidence"`
+	Score       *float64        `json:"score"`
 }
 type rawRegionEnvelope struct {
 	Regions []rawRegion `json:"regions"`
@@ -803,5 +803,3 @@ func renderCompare(p *comparePayload) *mcp.ToolResult {
 		mcp.TextContent("Structured result:\n" + string(blob)),
 	}}
 }
-
-
