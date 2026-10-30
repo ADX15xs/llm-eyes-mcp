@@ -27,8 +27,8 @@
 *.out
 coverage.txt
 
-# Local capture / media artefacts — dev harnesses (compare_e2e.mjs,
-# probe_grounding_accuracy.mjs) reference screenshots/ by local path only
+# Local capture / media artefacts — dev harnesses in scripts/ reference
+# screenshots/ by local path only
 /screenshots/
 /generated-images/
 /generated-videos/

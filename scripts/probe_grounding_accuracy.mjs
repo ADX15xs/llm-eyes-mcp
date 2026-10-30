@@ -5,14 +5,14 @@
 // （spec 是 750x1176 整页，截图是 750x446 裁切），拿它对分会把"盒子画错"和"坐标系不同"
 // 混在一起——上一轮 e2e 的 0/5 就是这么来的。合成图的真值来自 DOM boundingBox()，无歧义。
 //
-// 用法：node probe_grounding_accuracy.mjs [reps]
+// 用法（仓库根）：node scripts/probe_grounding_accuracy.mjs [reps]
 // 结果：控制台表格 + grounding_accuracy.json
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
-const ROOT = import.meta.dirname;
+const ROOT = path.resolve(import.meta.dirname, '..');
 // 上游 key 在 uoma 仓库根的 .env 里（llm-eyes 自己的 .env 只有网关的 UOMA_API_KEY）
 const ENV = {};
 const keys = [

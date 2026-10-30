@@ -1,20 +1,20 @@
 /**
  * E2E smoke: run compare_design with real uoma provider (vision_glm)
- * Usage: node compare_e2e.mjs <screenshot_path> <spec_path>
+ * Usage (repo root): node scripts/compare_e2e.mjs <screenshot_path> <spec_path>
  */
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const SCREENSHOT = process.argv[2] || path.resolve(__dirname, 'screenshots/yyhd_reward_section.png');
+const SCREENSHOT = process.argv[2] || path.resolve(ROOT, 'screenshots/yyhd_reward_section.png');
 const SPEC = process.argv[3] || 'C:/Users/10078/AppData/Local/Temp/frame7_spec.json';
 
 function loadApiKey() {
   try {
-    const env = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+    const env = fs.readFileSync(path.join(ROOT, '.env'), 'utf8');
     const m = env.match(/UOMA_API_KEY=([^\n]+)/);
     return m ? m[1] : process.env.UOMA_API_KEY;
   } catch { return process.env.UOMA_API_KEY; }
@@ -24,7 +24,7 @@ async function callCompareDesign() {
   return new Promise((resolve, reject) => {
     const apiKey = loadApiKey();
     const server = spawn('bin/llm-eyes-mcp.exe', ['--config', 'config.yml'], {
-      cwd: __dirname,
+      cwd: ROOT,
       env: { ...process.env, UOMA_API_KEY: apiKey }
     });
 

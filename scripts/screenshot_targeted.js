@@ -18,7 +18,7 @@ async function main() {
   await page.goto(URL, { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForTimeout(3000);
 
-  const outDir = path.resolve(__dirname, 'screenshots');
+  const outDir = path.resolve(__dirname, '..', 'screenshots');
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
   // 1. 先滚动到奖品区域

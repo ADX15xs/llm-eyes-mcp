@@ -66,7 +66,7 @@ async function main() {
     }
   }
 
-  const outDir = path.resolve(__dirname, 'screenshots');
+  const outDir = path.resolve(__dirname, '..', 'screenshots');
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
   if (bestTarget && bestScore > 50) {
