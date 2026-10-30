@@ -499,7 +499,7 @@ func parseRegionReply(reply string, imgW, imgH int) ([]regionDetection, error) {
 			Box:        geometry.Box{Label: strings.TrimSpace(id), X0: nx[0], Y0: nx[1], X1: nx[2], Y1: nx[3]},
 			Text:       r.Text,
 			Confidence: conf,
-			Found:      !degenerate && conf >= 0,
+			Found:      !degenerate,
 		})
 	}
 	if len(out) == 0 {
