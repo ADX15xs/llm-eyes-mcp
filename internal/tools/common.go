@@ -68,17 +68,22 @@ func (d *Deps) preprocess(img *imageio.Image, opts imgproc.Options) (*imgproc.Ou
 			if opts.Pipeline == imgproc.PipelineSoft {
 				mime = "image/jpeg"
 			}
-		d.logf("L1 hit %s (%d bytes)", opts.CacheTag(), len(data))
-		w, h := decodedDims(data)
-		return &imgproc.Output{
-			Data:         data,
-			MIMEType:     mime,
-			Width:        w,
-			Height:       h,
-			SourceWidth:  img.Width,
-			SourceHeight: img.Height,
-			Pipeline:     opts.Pipeline,
-		}, nil
+			d.logf("L1 hit %s (%d bytes)", opts.CacheTag(), len(data))
+			w, h := 0, 0
+			if dw, dh, err := decodedDims(data); err == nil {
+				w, h = dw, dh
+			} else {
+				d.logf("warning: %s: cannot read cached image size: %v", opts.CacheTag(), err)
+			}
+			return &imgproc.Output{
+				Data:         data,
+				MIMEType:     mime,
+				Width:        w,
+				Height:       h,
+				SourceWidth:  img.Width,
+				SourceHeight: img.Height,
+				Pipeline:     opts.Pipeline,
+			}, nil
 		}
 	}
 	out, err := imgproc.Process(img.Data, opts)
@@ -99,12 +104,12 @@ func (d *Deps) preprocess(img *imageio.Image, opts imgproc.Options) (*imgproc.Ou
 // Width/Height a fresh Process returns. Coordinate parsing classifies
 // pixel vs thousandths replies against the dimensions the model actually saw;
 // leaving them zero silently forces the thousandths branch.
-func decodedDims(data []byte) (int, int) {
+func decodedDims(data []byte) (int, int, error) {
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return 0, 0
+		return 0, 0, err
 	}
-	return cfg.Width, cfg.Height
+	return cfg.Width, cfg.Height, nil
 }
 
 // ---------------------------------------------------------------------------
