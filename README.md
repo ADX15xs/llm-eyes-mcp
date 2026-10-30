@@ -36,9 +36,10 @@ Model Context Protocol（模型上下文协议），通过 stdin/stdout 上的 N
 
 ```bash
 make build    # -> bin/llm-eyes-mcp（Windows 上为 bin/llm-eyes-mcp.exe，Makefile 按宿主 OS 显式加后缀）
-make test     # 运行完整测试套件
+make test     # 运行完整测试套件（含仓库语言政策守门测试，见 AGENTS.md）
 make check    # 构建 + 校验配置与 provider，然后退出
 make all      # 交叉编译 windows / linux / darwin（产物带平台后缀，互不覆盖）
+make e2e      # 匹配对验收：真实网关跑 compare_design 并断言分数门槛（需 UOMA_API_KEY，不属于 make test）
 ```
 
 > Windows 上不要把无扩展名文件（如从 Linux 产物解压出的 `llm-eyes-mcp`）与 `.exe` 并存：
@@ -150,7 +151,10 @@ env     = { GLM_API_KEY = "${GLM_API_KEY}" }
 ## 项目结构
 
 ```
-cmd/llm-eyes-mcp   入口：标志位、配置、provider、缓存、服务器装配
+cmd/
+  llm-eyes-mcp    入口：标志位、配置、provider、缓存、服务器装配
+  llm-eyes-e2e    匹配对验收 harness（真实网关，`make e2e`）
+  llm-eyes-probe  定位准确率实验 harness（合成真值图，直连上游）
 internal/
   config   配置加载 / 环境变量展开 / 校验 / 凭据指纹
   mcp      协议层：NDJSON 帧、并发分发、工具注册表
@@ -160,6 +164,13 @@ internal/
   tools    四个工具 + 解析/几何/测量/比对逻辑
   cache    四层缓存
   geometry 确定性几何运算
+  e2e      stdio JSON-RPC 客户端 + compare_design 报告解析（验收用）
+  probe    合成真值图渲染（image/draw）与 IoU 打分（实验用）
+  envfile  .env 解析（仅 harness 用；服务端自身不读 .env）
+  purity   仓库语言政策守门测试（文件类型白名单，见 AGENTS.md）
+testdata/compare/   D-2 验收夹具（截图 + spec 匹配对）
+examples/           spec 样例（yyhd_reward_spec.json）
+docs/               技术规格、spec 契约、开发指南与归档证据
 ```
 
 ## 测试

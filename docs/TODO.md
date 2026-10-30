@@ -20,7 +20,7 @@
 
 - **位置**：`internal/tools/compare_locate.go` `compareBatchSize`（当前 =1）；`internal/tools/prompt.go` 单区域最小提示词
 - **原因（为什么妥协）**：uoma 网关对 vision 请求忽略所有 thinking 禁用参数（`enable_thinking` / `chat_template_kwargs.enable_thinking` / `thinking:{type:disabled}` / `response_format` json_schema 均实测无效），多区域定位提示词把整个 token 预算烧在推理上、content 返回 NULL（finish=length）；加大 `max_tokens` 至 8192 只产生更久的推理。batch=1 + 最小单区域提示词是唯一验证可靠的组合（直连 3/3 成功）。2026-10-27 探针与日志归档于 `docs/archive/`。
-- **偿还方式**：uoma 侧修复 thinking 透传后，调回 `compareBatchSize` 并重跑 E2E；或消费 `config.ProviderConfig.Extra`（现为死字段）透传后端参数，并把 batch size 做成 provider 级可配置。
+- **偿还方式**：uoma 侧修复 thinking 透传后，调回 `compareBatchSize` 并重跑 E2E（`make e2e`，Go 验收 harness）；或消费 `config.ProviderConfig.Extra`（现为死字段）透传后端参数，并把 batch size 做成 provider 级可配置。
 - **何时还**：上游条件已于 2026-10-28 满足（网关关思考落地，8 区域批网关侧直测 IoU 0.91、5.8s 均值）；但 batch=1 是当前唯一经真值 E2E（8/8）验证的档位，调回需重跑匹配对 E2E 复验多区域信封回复质量，并权衡逐区域重试/缓存粒度的损失——建议与 provider 级可配置化一并做，另行排期。
 - **影响**：请求量与图片流量 ×N（N=区域数）；首跑延迟约 20s/区域串行（29 区域 ≈10 分钟，README 已注明预期）。附带残留风险：单区域可靠性是经验结论，机制上无 `finish_reason=length` 防护——极长 desc 仍可能推理超限后整体失败。
 
@@ -68,6 +68,7 @@
 3. **VLM 坐标质量监控**：无物理标定时精度取决于 VLM 坐标输出，可考虑多 VLM 交叉验证。
 4. **强制触发场景**：若未来 Agent 生态需要"图片进来即预处理"，需客户端配合（当前不做，尊重 MCP 规范）。
 5. **compare_design 有界并发定位**：区域已按单区域拆分，天然可并行；仓库当前无并发先例（无 errgroup/信号量模式），需独立设计并评估网关限流（vision_qwen 已 429），可把 29 区域首跑从 ~10 分钟压至 ~3 分钟。
+6. **浏览器取材工具（chromedp）**：2026-10-31 纯净化删除了 playwright 取材脚本（screenshot_*.js，git 历史可找回）。未来如需对在线页面重新取材，用 chromedp（Go 原生 CDP）重写，保持语言纯净。
 
 ---
 
@@ -85,7 +86,7 @@
 - **来源**：2026-10-27/28 缓解修复会话（steel-all 审查后实施）
 - **状态**：✅ 已完成（2026-10-28，uoma 关思考落地后）。验收结果：
   - 网关直连 ping：200 / finish=stop / `reasoning_tokens=0`（验收清单 #3 的直接证据）。
-  - 匹配对 E2E（`screenshots/yyhd_reward_section.png` 750×446 + `examples/yyhd_reward_spec.json`，后者由暗像素检测客观标注）：**8/8 ok，score=1.00**，IoU 0.62–0.93，中心距 ≤5.5px，色差 ≤2.7（阈值 24），文本 8/8 精确匹配，`isError=false`，`vlm_rounds=8`（每区域一轮收敛，无重试）。
+  - 匹配对 E2E（截图 + spec 匹配对已入库为 `testdata/compare/yyhd_reward_section.png` 750×446 + `examples/yyhd_reward_spec.json`，后者由暗像素检测客观标注；验收 harness 为 `make e2e`）：**8/8 ok，score=1.00**，IoU 0.62–0.93，中心距 ≤5.5px，色差 ≤2.7（阈值 24），文本 8/8 精确匹配，`isError=false`，`vlm_rounds=8`（每区域一轮收敛，无重试）。
   - 首轮 E2E 曾 4/8，根因是 R-5（L1 命中丢尺寸）而非定位能力——修复后满分。Frame 7 全页截图（750×1176）仍缺，但匹配对验证已覆盖同等能力面，不再阻塞。
 - **性质**：已完成闭环；"精度提升"自此刻起有网关侧真值实证。
 

@@ -6,8 +6,9 @@ this codebase without breaking its invariants.
 ## What this is
 
 An MCP **stdio** server (`cmd/llm-eyes-mcp`) that gives a text-only LLM vision
-via three tools: `measure_image`, `describe_image`, `extract_text`. It is
-**zero-CGO** and ships as a single static binary (<20 MB).
+via four tools: `measure_image`, `describe_image`, `extract_text`,
+`compare_design`. It is **zero-CGO** and ships as a single static binary
+(<20 MB).
 
 ## Hard invariants (do not violate)
 
@@ -37,6 +38,11 @@ tools depends on mcp only through the Tool interface (mcp.Tool / mcp.ToolResult)
 
 The `mcp` package must never import `tools`, `vlm`, etc. It is the protocol
 boundary.
+
+Dev harnesses sit beside this axis and depend inward only:
+`cmd/llm-eyes-e2e` -> `{e2e, envfile, mcp}` (real-gateway acceptance),
+`cmd/llm-eyes-probe` -> `{probe, envfile, geometry}` (grounding experiments).
+No server package may import a harness package.
 
 ## Adding a VLM provider
 
@@ -81,7 +87,51 @@ boundary.
 ```bash
 make build && make test && make check
 make all      # cross-compile windows/linux/darwin
+make e2e      # matched-pair acceptance against the real gateway (needs UOMA_API_KEY)
 ```
 
-A healthy `make check` loads config, builds providers, registers the three
+A healthy `make check` loads config, builds providers, registers the four
 tools, and exits 0.
+
+## Dev harness & language purity
+
+Everything executable in this repository is Go. Non-Go harness material
+(screenshot capture scripts, a Node E2E runner, a Node grounding probe, a
+Python spec converter) was removed in 2026-10-31 after its Go replacements
+reproduced the old acceptance results (D-2: 8/8 ok, score=1.00).
+
+**File types enter through an allowlist, not a banlist.** Only the types a Go
+project needs may be tracked; anything else is rejected by
+`internal/purity/purity_test.go` (runs under `make test`, checks git-tracked
+and staged files):
+
+| Extension | Why it is allowed |
+|---|---|
+| `.go` | the language of this repo |
+| `.md` | documentation (README, AGENTS, docs/) |
+| `.json` | spec fixtures and data files (examples/, docs/) |
+| `.yml` / `.yaml` | CI workflow and config templates |
+| `.mod` / `.sum` | go.mod / go.sum |
+| `.png` | binary acceptance fixture (testdata/compare/) |
+| `.example` | config/env templates (config.yml.example, .env.example) |
+
+Extension-less allowlist: `Makefile`, `LICENSE`, `.gitignore`,
+`.gitattributes`. The only path exemption is `docs/archive/` — frozen probe
+evidence that must not grow new active material.
+
+To introduce a new file type: either implement it in Go, or amend the
+allowlist **in both** `internal/purity/purity_test.go` and the table above,
+with a justification for why Go cannot cover it.
+
+**Replacement gate:** before deleting a working harness in favour of a
+rewrite, the rewrite must first reproduce the old harness's acceptance
+results (for compare_design: the D-2 matched pair, 8/8 ok / score=1.00).
+
+Harness usage:
+- `make e2e` — spawns the compiled server, runs `compare_design` on the
+  checked-in fixture pair (`testdata/compare/yyhd_reward_section.png` +
+  `examples/yyhd_reward_spec.json`) against the real gateway, and enforces the
+  score gate. Fresh VLM run by default (`--cached` allows a cached answer).
+- `go run ./cmd/llm-eyes-probe` — grounding-accuracy experiment against an
+  OpenAI-compatible upstream; synthetic ground truth is drawn with image/draw
+  (no browser). Not part of the Makefile.

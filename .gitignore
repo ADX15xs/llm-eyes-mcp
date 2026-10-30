@@ -27,10 +27,11 @@
 *.out
 coverage.txt
 
-# Local capture / media artefacts — dev harnesses in scripts/ reference
-# screenshots/ by local path only
+# Local capture / media artefacts. The D-2 acceptance fixture now lives in
+# testdata/compare/ (tracked); screenshots/ remains local-only scratch.
 /screenshots/
 /generated-images/
 /generated-videos/
 
-node_modules/
+# Session workspace artefacts
+/.zcode/
