@@ -638,6 +638,7 @@ func (t *CompareTool) diffOne(r compareRegion, found map[string]regionDetection,
 		rd.ExpectedColor = r.Color
 		if has && det.Found {
 			ib := boxToPixel(det.Box, img.Width, img.Height)
+			sampled := false
 			if src != nil {
 				rect := image.Rectangle{
 					Min: image.Point{X: int(ib[0]), Y: int(ib[1])},
@@ -647,9 +648,18 @@ func (t *CompareTool) diffOne(r compareRegion, found map[string]regionDetection,
 					sample := imgproc.AverageRGB(src, rect, 0.2)
 					rd.ActualColor = sample.Hex()
 					rd.ColorDelta = sample.Delta(hexToRGB(r.Color))
+					sampled = true
 				}
 			}
-			if rd.ColorDelta > 24 {
+			switch {
+			case !sampled:
+				if rd.Status == "" {
+					rd.Status = "color_unverified"
+				} else {
+					rd.Status += "+color_unverified"
+				}
+				rd.Issues = append(rd.Issues, "color_unverified: could not sample pixels")
+			case rd.ColorDelta > 24:
 				if rd.Status == "" {
 					rd.Status = "color_mismatch"
 				} else {
