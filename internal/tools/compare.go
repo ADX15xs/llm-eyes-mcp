@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -622,9 +621,11 @@ func (t *CompareTool) diffOne(r compareRegion, found map[string]regionDetection,
 		rd.SpecBBox = []float64{sb[0], sb[1], sb[2], sb[3]}
 		if has && det.Found {
 			ib := boxToPixel(det.Box, img.Width, img.Height)
-			iou := intersectionOverUnion(sb, ib)
+			specBox := geometry.PixelBox{X0: sb[0], Y0: sb[1], X1: sb[2], Y1: sb[3]}
+			imgBox := geometry.PixelBox{X0: ib[0], Y0: ib[1], X1: ib[2], Y1: ib[3]}
+			iou := geometry.IoU(specBox, imgBox)
 			rd.IOU = iou
-			cd := centerDistPxDist(sb, ib)
+			cd := geometry.CenterDistance(specBox, imgBox)
 			rd.CenterDist = cd
 			if iou < 0.5 {
 				rd.Status = "offset"
@@ -706,29 +707,6 @@ func boxToPixel(b geometry.Box, pw, ph int) [4]float64 {
 		b.X1 * float64(pw),
 		b.Y1 * float64(ph),
 	}
-}
-
-func intersectionOverUnion(a, b [4]float64) float64 {
-	ix0 := math.Max(a[0], b[0])
-	iy0 := math.Max(a[1], b[1])
-	ix1 := math.Min(a[2], b[2])
-	iy1 := math.Min(a[3], b[3])
-	inter := math.Max(0, ix1-ix0) * math.Max(0, iy1-iy0)
-	areaA := math.Max(0, a[2]-a[0]) * math.Max(0, a[3]-a[1])
-	areaB := math.Max(0, b[2]-b[0]) * math.Max(0, b[3]-b[1])
-	union := areaA + areaB - inter
-	if union == 0 {
-		return 0
-	}
-	return inter / union
-}
-
-func centerDistPxDist(a, b [4]float64) float64 {
-	ca := [2]float64{(a[0] + a[2]) / 2, (a[1] + a[3]) / 2}
-	cb := [2]float64{(b[0] + b[2]) / 2, (b[1] + b[3]) / 2}
-	dx := ca[0] - cb[0]
-	dy := ca[1] - cb[1]
-	return math.Sqrt(dx*dx + dy*dy)
 }
 
 func normalizeWhitespace(s string) string {
