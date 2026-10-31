@@ -131,7 +131,10 @@ Harness usage:
 - `make e2e` — spawns the compiled server, runs `compare_design` on the
   checked-in fixture pair (`testdata/compare/yyhd_reward_section.png` +
   `examples/yyhd_reward_spec.json`) against the real gateway, and enforces the
-  score gate. Fresh VLM run by default (`--cached` allows a cached answer).
+  score gate. Fresh VLM run by default (`--cached` allows a cached answer):
+  the L2 cache key carries no server tuning knobs such as `compareBatchSize`,
+  so a cached pass would re-validate nothing — an acceptance run must always
+  exercise the live pipeline (this is what makes the T-2 repayment verifiable).
 - `go run ./cmd/llm-eyes-probe` — grounding-accuracy experiment against an
   OpenAI-compatible upstream; synthetic ground truth is drawn with image/draw
   (no browser). Not part of the Makefile.
