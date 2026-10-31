@@ -1,0 +1,28 @@
+rm -f bin/llm-eyes-mcp bin/llm-eyes-mcp.exe
+CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=v0.1.4-18-g2599242" -o bin/llm-eyes-mcp.exe ./cmd/llm-eyes-mcp
+CGO_ENABLED=0 go build -o bin/llm-eyes-e2e.exe ./cmd/llm-eyes-e2e
+bin/llm-eyes-e2e.exe --config config.yml
+[llm-eyes-mcp] config loaded from config.yml
+[llm-eyes-mcp] providers ready: vision_glm, vision_qwen (default "vision_glm")
+[llm-eyes-mcp] cache ready at C:\Users\10078\.llm-eyes-mcp | L1 removed=0 freed=0.0MB, L2 removed=0, credential purge=false
+[llm-eyes-mcp] llm-eyes-mcp v0.1.4-18-g2599242 ready on stdio
+[llm-eyes-mcp] L1 hit hard-e1500-q0-ctrue-strue-v1 (451880 bytes)
+[llm-eyes-mcp] compare located 8 regions across 8 batches (<=1 each)
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": [
+      {
+        "text": "compare_design score=1.00 (8/8 ok)\nAll 8 regions match\n[image_id=29795261167dee7eec50227fb032b698 (750x446 px); spec_hash=fdbc21a5; cache=L2; model=z-ai/glm-5.3-flash; vlm_rounds=8]",
+        "type": "text"
+      },
+      {
+        "text": "Structured result:\n{\n  \"summary\": \"All 8 regions match\",\n  \"score\": 1,\n  \"regions_total\": 8,\n  \"regions_ok\": 8,\n  \"image_id\": \"29795261167dee7eec50227fb032b698\",\n  \"image_width\": 750,\n  \"image_height\": 446,\n  \"spec_hash\": \"fdbc21a5a38624b4ea2f7a7cefa84dc805c4893d9d680fb3163757a6076a8d99\",\n  \"regions\": [\n    {\n      \"id\": \"voucher_label_1\",\n      \"status\": \"ok\",\n      \"found\": true,\n      \"bbox\": [\n        67.5,\n        209.61999999999998,\n        210.00000000000003,\n        236.38000000000002\n      ],\n      \"spec_bbox\": [\n        72,\n        210,\n        205,\n        235\n      ],\n      \"iou\": 0.87194818136522,\n      \"center_dist_px\": 0.5590169943749475,\n      \"expected_text\": \"Voucher(s)*1\",\n      \"actual_text\": \"Voucher(s)*1\"\n    },\n    {\n      \"id\": \"voucher_label_2\",\n      \"status\": \"ok\",\n      \"found\": true,\n      \"bbox\": [\n        241.5,\n        208.728,\n        385.5,\n        235.934\n      ],\n      \"spec_bbox\": [\n        242,\n        210,\n        375,\n        235\n      ],\n      \"iou\": 0.8487200535829518,\n      \"center_dist_px\": 5.002855284734907,\n      \"expected_text\": \"Voucher(s)*1\",\n      \"actual_text\": \"Voucher(s)*1\"\n    },\n    {\n      \"id\": \"voucher_label_4\",\n      \"status\": \"ok\",\n      \"found\": true,\n      \"bbox\": [\n        521.25,\n        207.39000000000001,\n        678.75,\n        238.61\n      ],\n      \"spec_bbox\": [\n        530,\n        210,\n        662,\n        235\n      ],\n      \"iou\": 0.6711204661236693,\n      \"center_dist_px\": 4.031128874149275,\n      \"expected_text\": \"Voucher(s)*1\",\n      \"actual_text\": \"Voucher(s)*1\"\n    },\n    {\n      \"id\": \"players_1\",\n      \"status\": \"ok\",\n      \"found\": true,\n      \"bbox\": [\n        95.00000000000001,\n        318,\n        190.00000000000003,\n        344\n      ],\n      \"spec_bbox\": [\n        95,\n        320,\n        188,\n        347\n      ],\n      \"iou\": 0.8119316114950889,\n      \"center_dist_px\": 2.6925824035672625,\n      \"expected_text\": \"1 Players\",\n      \"actual_text\": \"1 Players\"\n    },\n    {\n      \"id\": \"players_2\",\n      \"status\": \"ok\",\n      \"found\": true,\n      \"bbox\": [\n        263,\n        318,\n        361,\n        344\n      ],\n      \"spec_bbox\": [\n        264,\n        320,\n        358,\n        347\n      ],\n      \"iou\": 0.7971731448763251,\n      \"center_dist_px\": 2.6925824035672523,\n      \"expected_text\": \"2 Players\",\n      \"actual_text\": \"2 Players\"\n    },\n    {\n      \"id\": \"players_10\",\n      \"status\": \"ok\",\n      \"found\": true,\n      \"bbox\": [\n        543,\n        318,\n        652,\n        344\n      ],\n      \"spec_bbox\": [\n        546,\n        320,\n        651,\n        347\n      ],\n      \"iou\": 0.8002540489044141,\n      \"center_dist_px\": 2.6925824035672523,\n      \"expected_text\": \"10 Players\",\n      \"actual_text\": \"10 Players\"\n    },\n    {\n      \"id\": \"btn_1\",\n      \"status\": \"ok\",\n      \"found\": true,\n      \"bbox\": [\n        72,\n        350.55600000000004,\n        207.00000000000003,\n        413.88800000000003\n      ],\n      \"spec_bbox\": [\n        82,\n        350,\n        206,\n        408\n      ],\n      \"iou\": 0.826459107129513,\n      \"center_dist_px\": 5.5345536405387055,\n      \"expected_color\": \"#E3C46A\",\n      \"actual_color\": \"#E1C36A\",\n      \"color_delta\": 2.6514516330871487,\n      \"expected_text\": \"Not Reached\",\n      \"actual_text\": \"Not Reached\"\n    },\n    {\n      \"id\": \"btn_10\",\n      \"status\": \"ok\",\n      \"found\": true,\n      \"bbox\": [\n        531,\n        352,\n        664,\n        412\n      ],\n      \"spec_bbox\": [\n        538,\n        350,\n        664,\n        408\n      ],\n      \"iou\": 0.8571428571428571,\n      \"center_dist_px\": 4.6097722286464435,\n      \"expected_color\": \"#E2C46B\",\n      \"actual_color\": \"#E1C46C\",\n      \"color_delta\": 1.6947070914649542,\n      \"expected_text\": \"Not Reached\",\n      \"actual_text\": \"Not Reached\"\n    }\n  ],\n  \"model\": \"z-ai/glm-5.3-flash\",\n  \"cache_tier\": \"L2\",\n  \"vlm_rounds\": 8\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+PASS compare_design score=1.00 (8/8 regions ok, min-score=1.00)

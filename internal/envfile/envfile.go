@@ -5,13 +5,16 @@ package envfile
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"strings"
 )
 
 // Load reads the given dotenv files in order and merges them into one map;
-// later files win. Missing files are skipped so callers can list candidates
-// freely. Comment lines (#) and lines without "=" are ignored.
+// later files win. Files that are missing or fail to be read are skipped so
+// callers can list candidates freely — a partially read file contributes
+// nothing rather than a truncated guess. Comment lines (#) and lines without
+// "=" are ignored.
 func Load(paths ...string) map[string]string {
 	values := make(map[string]string)
 	for _, path := range paths {
@@ -19,23 +22,37 @@ func Load(paths ...string) map[string]string {
 		if err != nil {
 			continue
 		}
-		sc := bufio.NewScanner(f)
-		for sc.Scan() {
-			line := strings.TrimSpace(sc.Text())
-			if line == "" || strings.HasPrefix(line, "#") {
-				continue
-			}
-			key, value, ok := strings.Cut(line, "=")
-			if !ok {
-				continue
-			}
-			key = strings.TrimSpace(key)
-			value = strings.Trim(strings.TrimSpace(value), `"'`)
-			if key != "" {
-				values[key] = value
+		if vars := parse(f); vars != nil {
+			for k, v := range vars {
+				values[k] = v
 			}
 		}
 		f.Close()
 	}
 	return values
+}
+
+// parse returns nil when the input cannot be read to EOF.
+func parse(r io.Reader) map[string]string {
+	vars := make(map[string]string)
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.Trim(strings.TrimSpace(value), `"'`)
+		if key != "" {
+			vars[key] = value
+		}
+	}
+	if sc.Err() != nil {
+		return nil
+	}
+	return vars
 }

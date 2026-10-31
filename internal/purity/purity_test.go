@@ -19,7 +19,6 @@ var allowedExts = map[string]string{
 	".md":      "documentation (README, AGENTS, docs/)",
 	".json":    "spec fixtures and data files (examples/, docs/)",
 	".yml":     "CI workflow and config templates",
-	".yaml":    "reserved for future config documents",
 	".mod":     "go.mod",
 	".sum":     "go.sum",
 	".png":     "binary acceptance fixture (testdata/compare/)",

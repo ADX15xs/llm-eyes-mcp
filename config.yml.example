@@ -39,6 +39,17 @@ providers:
     # glm-4.1v-thinking-flash 64k (max_tokens: default 32768 / max 32768)
     # glm-4.6v-flash 128K (max_tokens: default 16384 / max 32768)
 
+  # A uoma-gateway vision deployment (OpenAI-compatible Chat Completions).
+  # `make e2e` drives this provider by default; its key is UOMA_API_KEY.
+  vision_glm:
+    enabled: true
+    type: openai_vision
+    base_url: http://100.69.40.56:4000/v1
+    api_key: ${UOMA_API_KEY}
+    model: vision-glm              # the gateway deployment name
+    model_version: vision-glm/glm-5.3-flash   # feeds the L2 cache key; bump on model swap
+    timeout_seconds: 240           # large multi-region grounding needs long generations
+
   # A local llama.cpp / llama-swap / Ollama backend. Loopback URLs need no key.
   local:
     enabled: false

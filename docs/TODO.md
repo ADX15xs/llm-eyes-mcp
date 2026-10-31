@@ -86,7 +86,7 @@
 - **来源**：2026-10-27/28 缓解修复会话（steel-all 审查后实施）
 - **状态**：✅ 已完成（2026-10-28，uoma 关思考落地后）。验收结果：
   - 网关直连 ping：200 / finish=stop / `reasoning_tokens=0`（验收清单 #3 的直接证据）。
-  - 匹配对 E2E（截图 + spec 匹配对已入库为 `testdata/compare/yyhd_reward_section.png` 750×446 + `examples/yyhd_reward_spec.json`，后者由暗像素检测客观标注；验收 harness 为 `make e2e`）：**8/8 ok，score=1.00**，IoU 0.62–0.93，中心距 ≤5.5px，色差 ≤2.7（阈值 24），文本 8/8 精确匹配，`isError=false`，`vlm_rounds=8`（每区域一轮收敛，无重试）。
+  - 匹配对 E2E（截图 + spec 匹配对已入库为 `testdata/compare/yyhd_reward_section.png` 750×446 + `examples/yyhd_reward_spec.json`，后者由暗像素检测客观标注；验收 harness 为 `make e2e`）：**8/8 ok，score=1.00**，IoU 0.62–0.93，中心距 ≤5.5px，色差 ≤2.7（阈值 24），文本 8/8 精确匹配，`isError=false`，`vlm_rounds=8`（每区域一轮收敛，无重试）。2026-10-31 以 Go harness（`make e2e`）复跑：**8/8 ok，score=1.00**，IoU 0.67–0.87，中心距最大 5.53px，色差 ≤2.7，文本 8/8 精确匹配；完整响应日志存档于 `docs/archive/e2e_d2_match.log`。
   - 首轮 E2E 曾 4/8，根因是 R-5（L1 命中丢尺寸）而非定位能力——修复后满分。Frame 7 全页截图（750×1176）仍缺，但匹配对验证已覆盖同等能力面，不再阻塞。
 - **性质**：已完成闭环；"精度提升"自此刻起有网关侧真值实证。
 

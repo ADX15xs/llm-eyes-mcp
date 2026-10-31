@@ -146,7 +146,7 @@ func run() error {
 }
 
 func newRow(cond condition, rep int, gt map[string][4]float64, r *probe.CallResult) row {
-	row := row{
+	res := row{
 		Name:             cond.name,
 		Rep:              rep,
 		MS:               r.Milliseconds,
@@ -156,38 +156,38 @@ func newRow(cond condition, rep int, gt map[string][4]float64, r *probe.CallResu
 		CompletionTokens: r.CompletionTokens,
 	}
 	if r.Error != "" {
-		row.Error = r.Error
-		return row
+		res.Error = r.Error
+		return res
 	}
-	row.OK = true
-	row.JSONOK = r.Parsed != nil
-	row.Content = r.Content
+	res.OK = true
+	res.JSONOK = r.Parsed != nil
+	res.Content = r.Content
 	s := probe.Score(gt, r.Parsed)
-	row.Returned = s.Returned
-	row.IoUMean = s.IoUMean
-	row.IoUOk = s.IoUOk
-	row.TextOk = s.TextOk
-	row.PixelSpace = s.PixelSpace
-	return row
+	res.Returned = s.Returned
+	res.IoUMean = s.IoUMean
+	res.IoUOk = s.IoUOk
+	res.TextOk = s.TextOk
+	res.PixelSpace = s.PixelSpace
+	return res
 }
 
-func printRow(row row) {
+func printRow(r row) {
 	targets := len(probe.Targets)
-	if !row.OK {
-		fmt.Printf("%-22s rep%d %6dms  ERR(%d) %s\n", row.Name, row.Rep, row.MS, row.Status, row.Error)
+	if !r.OK {
+		fmt.Printf("%-22s rep%d %6dms  ERR(%d) %s\n", r.Name, r.Rep, r.MS, r.Status, r.Error)
 		return
 	}
 	jsonState := "BAD"
-	if row.JSONOK {
+	if r.JSONOK {
 		jsonState = "ok"
 	}
 	fmt.Printf("%-22s rep%d %6dms  rt=%s out=%s json=%s n=%d/%d iou_mean=%.3f iou>=%.1f=%d/%d text=%d/%d",
-		row.Name, row.Rep, row.MS, intStr(row.ReasoningTokens), intStr(row.CompletionTokens), jsonState,
-		row.Returned, targets, row.IoUMean, probe.IoUPass, row.IoUOk, targets, row.TextOk, targets)
-	if row.PixelSpace > 0 {
-		fmt.Printf(" pixelSpace=%d/%d", row.PixelSpace, targets)
+		r.Name, r.Rep, r.MS, intStr(r.ReasoningTokens), intStr(r.CompletionTokens), jsonState,
+		r.Returned, targets, r.IoUMean, probe.IoUPass, r.IoUOk, targets, r.TextOk, targets)
+	if r.PixelSpace > 0 {
+		fmt.Printf(" pixelSpace=%d/%d", r.PixelSpace, targets)
 	}
-	if row.IoUOk == targets {
+	if r.IoUOk == targets {
 		fmt.Print("  ✓")
 	}
 	fmt.Println()

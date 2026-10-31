@@ -110,7 +110,7 @@ and staged files):
 | `.go` | the language of this repo |
 | `.md` | documentation (README, AGENTS, docs/) |
 | `.json` | spec fixtures and data files (examples/, docs/) |
-| `.yml` / `.yaml` | CI workflow and config templates |
+| `.yml` | CI workflow and config templates |
 | `.mod` / `.sum` | go.mod / go.sum |
 | `.png` | binary acceptance fixture (testdata/compare/) |
 | `.example` | config/env templates (config.yml.example, .env.example) |
@@ -126,6 +126,7 @@ with a justification for why Go cannot cover it.
 **Replacement gate:** before deleting a working harness in favour of a
 rewrite, the rewrite must first reproduce the old harness's acceptance
 results (for compare_design: the D-2 matched pair, 8/8 ok / score=1.00).
+The passing run log is archived at `docs/archive/e2e_d2_match.log`.
 
 Harness usage:
 - `make e2e` — spawns the compiled server, runs `compare_design` on the
@@ -137,4 +138,6 @@ Harness usage:
   exercise the live pipeline (this is what makes the T-2 repayment verifiable).
 - `go run ./cmd/llm-eyes-probe` — grounding-accuracy experiment against an
   OpenAI-compatible upstream; synthetic ground truth is drawn with image/draw
-  (no browser). Not part of the Makefile.
+  (no browser). Not part of the Makefile. Its upstream key comes from
+  `--key-env` (default `NVIDIA_API_KEY`), falling back to the sibling repo's
+  `../uoma/.env`.
